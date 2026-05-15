@@ -90,7 +90,7 @@ fun AppHeader(
                             badge = {
                                 if (notificationCount > 0) {
                                     Badge(
-                                        modifier = Modifier.offset(x = (-12).dp, y = 8.dp)
+                                        modifier = Modifier.offset(x = (0).dp, y = -1.dp)
                                     ) { Text(notificationCount.toString()) }
                                 }
                             }

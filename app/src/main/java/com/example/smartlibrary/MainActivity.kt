@@ -29,12 +29,14 @@ import com.example.smartlibrary.ui.screens.AboutScreen
 import com.example.smartlibrary.ui.screens.NewsScreen
 import com.example.smartlibrary.ui.screens.NewsDetailScreen
 import com.example.smartlibrary.ui.screens.CartScreen
+import com.example.smartlibrary.ui.screens.NotificationScreen
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
 import com.example.smartlibrary.ui.viewmodel.MainViewModel
 import com.example.smartlibrary.ui.viewmodel.BookDetailViewModel
 import com.example.smartlibrary.ui.viewmodel.CategoriesViewModel
 import com.example.smartlibrary.ui.viewmodel.NewsViewModel
 import com.example.smartlibrary.ui.viewmodel.CartViewModel
+import com.example.smartlibrary.ui.viewmodel.NotificationViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
@@ -94,7 +96,7 @@ fun MainApp(
                     notificationCount = unreadNotifications,
                     onSearchClick = { navController.navigate("search") },
                     onCartClick = { navController.navigate("cart") },
-                    onNotificationClick = { },
+                    onNotificationClick = { navController.navigate("notifications") },
                     onProfileClick = { },
                     onLoginClick = { viewModel.toggleLogin() },
                     onChatClick = { viewModel.showChatBot() }
@@ -170,6 +172,23 @@ fun MainApp(
                 CartScreen(
                     viewModel = cartViewModel,
                     onBookClick = { bookId -> navController.navigate("book_detail/$bookId") }
+                )
+            }
+            composable("notifications") {
+                val notificationViewModel: NotificationViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return NotificationViewModel(
+                                apiService = RetrofitClient.apiService,
+                                onUnreadCountChanged = { count -> viewModel.setUnreadNotificationCount(count) }
+                            ) as T
+                        }
+                    }
+                )
+                NotificationScreen(
+                    viewModel = notificationViewModel,
+                    userId = "user123" // Mock userId
                 )
             }
             composable("search") {

@@ -8,6 +8,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.DELETE
 import retrofit2.http.HTTP
+import retrofit2.http.PUT
 
 interface ApiService {
     @GET("api/book")
@@ -63,6 +64,12 @@ interface ApiService {
         @Body bookIds: List<String>
     ): Response<Unit>
 
+    @GET("api/notification/{userId}")
+    suspend fun getNotifications(@Path("userId") userId: String): List<NotificationItem>
+
+    @PUT("api/notification/mark-as-read/{id}")
+    suspend fun markNotificationAsRead(@Path("id") id: String): Response<Unit>
+
 }
 
 data class BookResponse(
@@ -115,4 +122,11 @@ data class CartResponseWrapper(
 
 data class CartItem(
     val bookId: String
+)
+
+data class NotificationItem(
+    val id: String,
+    val message: String,
+    val timestamp: String,
+    val isRead: Boolean
 )

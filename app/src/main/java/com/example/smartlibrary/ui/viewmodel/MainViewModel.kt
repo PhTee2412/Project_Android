@@ -159,6 +159,10 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
         _cartCount.value = count
     }
 
+    fun setUnreadNotificationCount(count: Int) {
+        _unreadNotificationCount.value = count
+    }
+
     private fun BookResponse.toBook() = Book(
         id = maSach,
         title = tenSach,
