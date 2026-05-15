@@ -44,6 +44,9 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
     private val _isChatBotVisible = MutableStateFlow(true)
     val isChatBotVisible: StateFlow<Boolean> = _isChatBotVisible.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     init {
         loadHomeData()
         startSidebarRotation()
@@ -130,6 +133,7 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     fun searchBooks(query: String) {
+        _searchQuery.value = query
         viewModelScope.launch {
             _isLoading.value = true
             try {

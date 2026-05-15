@@ -154,7 +154,10 @@ fun MainApp(
                 )
             }
             composable("search") {
+                val searchQuery by viewModel.searchQuery.collectAsState()
                 SearchScreen(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { viewModel.searchBooks(it) },
                     searchResults = searchResults,
                     isLoading = isLoading,
                     onSearch = { viewModel.searchBooks(it) },
