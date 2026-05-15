@@ -6,6 +6,8 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.DELETE
+import retrofit2.http.HTTP
 
 interface ApiService {
     @GET("api/book")
@@ -16,13 +18,13 @@ interface ApiService {
 
     @GET("api/book/v2/category-parent/{parentId}")
     suspend fun getBooksByParentCategory(
-        @Path("parentId") parentId: String,   // <-- đổi Long thành String
+        @Path("parentId") parentId: String,
         @Query("filter") filter: String
     ): List<BookResponse>
 
     @GET("api/book/v2/category-child/{childId}")
     suspend fun getBooksByChildCategory(
-        @Path("childId") childId: String,     // <-- đổi Long thành String
+        @Path("childId") childId: String,
         @Query("filter") filter: String
     ): List<BookResponse>
 
@@ -38,20 +40,29 @@ interface ApiService {
     @POST("api/borrow-cards")
     suspend fun borrowBook(@Body request: BorrowRequest): Response<Unit>
 
-    @POST("api/cart/{userId}/add/books")
-    suspend fun addToCart(
-        @Path("userId") userId: String,
-        @Body bookIds: List<String>
-    ): Response<Unit>
-
-    @GET("api/cart/{userId}")
-    suspend fun getCart(@Path("userId") userId: String): CartResponseWrapper
 
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
 
     @GET("api/category-child/category/{parentId}")
     suspend fun getCategoryChildren(@Path("parentId") parentId: String): List<CategoryChildResponse>
+
+
+    @GET("api/cart/{userId}")
+    suspend fun getCart(@Path("userId") userId: String): CartResponseWrapper
+
+    @POST("api/cart/{userId}/add/books")
+    suspend fun addToCart(
+        @Path("userId") userId: String,
+        @Body bookIds: List<String>
+    ): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "api/cart/{userId}/remove/books", hasBody = true)
+    suspend fun removeBooksFromCart(
+        @Path("userId") userId: String,
+        @Body bookIds: List<String>
+    ): Response<Unit>
+
 }
 
 data class BookResponse(
@@ -83,7 +94,7 @@ data class CategoryChildResponse(
     val id: String,
     val name: String,
     val parentId: Long? = null,
-    val parentName: String? = null  // Thêm dòng này
+    val parentName: String? = null
 )
 
 data class SuggestRequest(
@@ -96,8 +107,10 @@ data class BorrowRequest(
     val bookIds: List<Int>
 )
 
+
+
 data class CartResponseWrapper(
-    val data: List<CartItem>?
+    val data: List<BookResponse>?
 )
 
 data class CartItem(

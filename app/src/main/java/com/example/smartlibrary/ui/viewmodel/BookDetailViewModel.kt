@@ -54,7 +54,7 @@ class BookDetailViewModel(
         viewModelScope.launch {
             try {
                 val response = apiService.getCart(userId)
-                val found = response.data?.any { it.bookId == bookId } ?: false
+                val found = response.data?.any { it.maSach == bookId } ?: false
                 _isAddedToCart.value = found
             } catch (e: Exception) {
                 e.printStackTrace()

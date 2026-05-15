@@ -28,11 +28,13 @@ import com.example.smartlibrary.ui.screens.CategoriesScreen
 import com.example.smartlibrary.ui.screens.AboutScreen
 import com.example.smartlibrary.ui.screens.NewsScreen
 import com.example.smartlibrary.ui.screens.NewsDetailScreen
+import com.example.smartlibrary.ui.screens.CartScreen
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
 import com.example.smartlibrary.ui.viewmodel.MainViewModel
 import com.example.smartlibrary.ui.viewmodel.BookDetailViewModel
 import com.example.smartlibrary.ui.viewmodel.CategoriesViewModel
 import com.example.smartlibrary.ui.viewmodel.NewsViewModel
+import com.example.smartlibrary.ui.viewmodel.CartViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
@@ -91,7 +93,7 @@ fun MainApp(
                     cartCount = cartCount,
                     notificationCount = unreadNotifications,
                     onSearchClick = { navController.navigate("search") },
-                    onCartClick = { },
+                    onCartClick = { navController.navigate("cart") },
                     onNotificationClick = { },
                     onProfileClick = { },
                     onLoginClick = { viewModel.toggleLogin() },
@@ -151,6 +153,23 @@ fun MainApp(
                 NewsDetailScreen(
                     viewModel = newsViewModel,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable("cart") {
+                val cartViewModel: CartViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return CartViewModel(
+                                apiService = RetrofitClient.apiService,
+                                onCartCountChanged = { count -> viewModel.setCartCount(count) }
+                            ) as T
+                        }
+                    }
+                )
+                CartScreen(
+                    viewModel = cartViewModel,
+                    onBookClick = { bookId -> navController.navigate("book_detail/$bookId") }
                 )
             }
             composable("search") {

@@ -155,6 +155,10 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
         _isChatBotVisible.value = true
     }
 
+    fun setCartCount(count: Int) {
+        _cartCount.value = count
+    }
+
     private fun BookResponse.toBook() = Book(
         id = maSach,
         title = tenSach,

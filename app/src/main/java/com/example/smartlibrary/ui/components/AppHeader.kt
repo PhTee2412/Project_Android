@@ -9,11 +9,12 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,14 +26,22 @@ fun AppHeader(
     onSearchClick: () -> Unit,
     onCartClick: () -> Unit,
     onNotificationClick: () -> Unit,
-    onProfileClick: () -> Unit,
+    onProfileClick: () -> Unit = {},
     onLoginClick: () -> Unit,
-    onChatClick: () -> Unit
+    onChatClick: () -> Unit,
+    // Các callback cho menu profile
+    onBorrowedCardsClick: () -> Unit = {},
+    onFineClick: () -> Unit = {},
+    onChangePasswordClick: () -> Unit = {},
+    onQRCodeClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White) // Màu nền toàn bộ vùng header (bao gồm status bar)
+            .background(Color.White)
     ) {
         TopAppBar(
             title = {
@@ -61,34 +70,89 @@ fun AppHeader(
                     }
 
                     // Giỏ hàng
-                    BadgedBox(
-                        badge = {
-                            if (cartCount > 0) {
-                                Badge { Text(cartCount.toString()) }
+                    IconButton(onClick = onCartClick) {
+                        BadgedBox(
+                            badge = {
+                                if (cartCount > 0) {
+                                    Badge(
+                                        modifier = Modifier.offset(x = 0.dp, y = -1.dp)
+                                    ) { Text(cartCount.toString()) }
+                                }
                             }
-                        }
-                    ) {
-                        IconButton(onClick = onCartClick) {
+                        ) {
                             Icon(Icons.Outlined.ShoppingCart, contentDescription = "Giỏ hàng")
                         }
                     }
 
                     // Thông báo
-                    BadgedBox(
-                        badge = {
-                            if (notificationCount > 0) {
-                                Badge { Text(notificationCount.toString()) }
+                    IconButton(onClick = onNotificationClick) {
+                        BadgedBox(
+                            badge = {
+                                if (notificationCount > 0) {
+                                    Badge(
+                                        modifier = Modifier.offset(x = (-12).dp, y = 8.dp)
+                                    ) { Text(notificationCount.toString()) }
+                                }
                             }
-                        }
-                    ) {
-                        IconButton(onClick = onNotificationClick) {
+                        ) {
                             Icon(Icons.Outlined.Notifications, contentDescription = "Thông báo")
                         }
                     }
 
-                    // Profile
-                    IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Outlined.AccountCircle, contentDescription = "Tài khoản")
+                    // Profile với menu thả xuống
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Outlined.AccountCircle, contentDescription = "Tài khoản")
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                            offset = DpOffset(0.dp, 0.dp),
+                            modifier = Modifier.width(160.dp)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Hồ sơ của bạn") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onProfileClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Phiếu mượn") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onBorrowedCardsClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Phiếu phạt") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onFineClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Đổi mật khẩu") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onChangePasswordClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Mã QR của tôi") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onQRCodeClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Đăng xuất") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onLogoutClick()
+                                }
+                            )
+                        }
                     }
                 } else {
                     TextButton(onClick = onLoginClick) {
@@ -103,11 +167,11 @@ fun AppHeader(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent, // nền trong suốt để lộ màu của Box bên ngoài
+                containerColor = Color.Transparent,
                 titleContentColor = Color.Black,
             ),
             modifier = Modifier
-                .statusBarsPadding() // Đẩy nội dung xuống dưới thanh trạng thái
+                .statusBarsPadding()
                 .height(56.dp)
         )
     }
