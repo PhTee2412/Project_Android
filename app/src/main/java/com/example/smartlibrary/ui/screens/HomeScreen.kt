@@ -163,7 +163,7 @@ fun HomeScreen(
                             enabled = hasNextPage,
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF062D76),
+                                containerColor = Color(0xFF9CE5F4),
                                 disabledContainerColor = Color.LightGray
                             ),
                             shape = RoundedCornerShape(8.dp)

@@ -5,12 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,17 +23,27 @@ import com.example.smartlibrary.ui.components.AppBottomBar
 import com.example.smartlibrary.ui.components.AppHeader
 import com.example.smartlibrary.ui.screens.HomeScreen
 import com.example.smartlibrary.ui.screens.SearchScreen
+import com.example.smartlibrary.ui.screens.BookDetailScreen
+import com.example.smartlibrary.ui.screens.CategoriesScreen
+import com.example.smartlibrary.ui.screens.AboutScreen
+import com.example.smartlibrary.ui.screens.NewsScreen
+import com.example.smartlibrary.ui.screens.NewsDetailScreen
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
 import com.example.smartlibrary.ui.viewmodel.MainViewModel
+import com.example.smartlibrary.ui.viewmodel.BookDetailViewModel
+import com.example.smartlibrary.ui.viewmodel.CategoriesViewModel
+import com.example.smartlibrary.ui.viewmodel.NewsViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val viewModel: MainViewModel = viewModel(
+            val mainViewModel: MainViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
@@ -43,7 +55,7 @@ class MainActivity : ComponentActivity() {
             var isDarkMode by remember { mutableStateOf(false) }
 
             SmartLibraryTheme(darkTheme = isDarkMode) {
-                MainApp(viewModel)
+                MainApp(mainViewModel)
             }
         }
     }
@@ -63,7 +75,13 @@ fun MainApp(
     val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    val showBars = currentRoute != "search"
+    // NewsViewModel dùng chung cho NewsScreen và NewsDetailScreen
+    val newsViewModel: NewsViewModel = viewModel()
+
+    // Chỉ hiện Header và BottomBar ở các màn hình chính
+    val showBars = currentRoute != "search" && 
+                   currentRoute?.startsWith("book_detail") != true &&
+                   currentRoute?.startsWith("news_detail") != true
 
     Scaffold(
         topBar = {
@@ -96,25 +114,72 @@ fun MainApp(
         NavHost(
             navController = navController,
             startDestination = "home",
-            modifier = Modifier.padding(innerPadding)  // Giữ lại, không bỏ
+            modifier = Modifier.padding(if (showBars) innerPadding else PaddingValues(0.dp))
         ) {
             composable("home") {
                 HomeScreen(
                     viewModel = viewModel,
-                    onBookClick = { bookId -> },
+                    onBookClick = { bookId -> navController.navigate("book_detail/$bookId") },
                     onChatBotClick = { }
                 )
             }
-            composable("categories") { PlaceholderScreen("Thể loại") }
-            composable("about") { PlaceholderScreen("Giới thiệu") }
-            composable("news") { PlaceholderScreen("Tin sách") }
+            composable("categories") { 
+                val categoriesViewModel: CategoriesViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return CategoriesViewModel(RetrofitClient.apiService) as T
+                        }
+                    }
+                )
+                CategoriesScreen(
+                    viewModel = categoriesViewModel,
+                    onBookClick = { bookId -> navController.navigate("book_detail/$bookId") }
+                )
+            }
+            composable("about") { AboutScreen(navController = navController) }
+            composable("news") { 
+                NewsScreen(
+                    viewModel = newsViewModel,
+                    onNewsClick = { news ->
+                        newsViewModel.selectNews(news)
+                        navController.navigate("news_detail")
+                    }
+                )
+            }
+            composable("news_detail") {
+                NewsDetailScreen(
+                    viewModel = newsViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable("search") {
                 SearchScreen(
                     searchResults = searchResults,
                     isLoading = isLoading,
                     onSearch = { viewModel.searchBooks(it) },
                     onBack = { navController.popBackStack() },
-                    onBookClick = { bookId -> }
+                    onBookClick = { bookId -> navController.navigate("book_detail/$bookId") }
+                )
+            }
+            composable(
+                route = "book_detail/{bookId}",
+                arguments = listOf(navArgument("bookId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+                val detailViewModel: BookDetailViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return BookDetailViewModel(RetrofitClient.apiService, bookId) as T
+                        }
+                    }
+                )
+                BookDetailScreen(
+                    viewModel = detailViewModel,
+                    isLoggedIn = isLoggedIn,
+                    onLoginRequired = { viewModel.toggleLogin() },
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
