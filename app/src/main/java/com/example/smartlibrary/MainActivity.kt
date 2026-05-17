@@ -86,9 +86,12 @@ fun MainApp(
     // NewsViewModel dùng chung cho NewsScreen và NewsDetailScreen
     val newsViewModel: NewsViewModel = viewModel()
 
-    // Ẩn Header và BottomBar ở màn hình search, chat và detail
+    // Ẩn Header và BottomBar ở các màn hình chi tiết hoặc chức năng đặc biệt
     val showBars = currentRoute != "search" && 
                    currentRoute != "chat" &&
+                   currentRoute != "profile" &&
+                   currentRoute != "borrowed_cards" &&
+                   currentRoute?.startsWith("borrowed_card_detail") != true &&
                    currentRoute?.startsWith("book_detail") != true &&
                    currentRoute?.startsWith("news_detail") != true
 
@@ -102,10 +105,11 @@ fun MainApp(
                     onSearchClick = { navController.navigate("search") },
                     onCartClick = { navController.navigate("cart") },
                     onNotificationClick = { navController.navigate("notifications") },
-                    onProfileClick = { },
+                    onProfileClick = { navController.navigate("profile") },
                     onLoginClick = { viewModel.toggleLogin() },
                     onChatClick = { navController.navigate("chat") },
-                    onLogoutClick = { viewModel.toggleLogin() } // Giả lập logout bằng cách toggle
+                    onBorrowedCardsClick = { navController.navigate("borrowed_cards") },
+                    onLogoutClick = { viewModel.toggleLogin() }
                 )
             }
         },
@@ -195,6 +199,54 @@ fun MainApp(
                 NotificationScreen(
                     viewModel = notificationViewModel,
                     userId = "user123" // Mock userId
+                )
+            }
+            composable("profile") {
+                val profileViewModel: ProfileViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return ProfileViewModel(RetrofitClient.apiService) as T
+                        }
+                    }
+                )
+                ProfileScreen(
+                    viewModel = profileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("borrowed_cards") {
+                val borrowedViewModel: BorrowedCardsViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return BorrowedCardsViewModel(RetrofitClient.apiService) as T
+                        }
+                    }
+                )
+                BorrowedCardsScreen(
+                    viewModel = borrowedViewModel,
+                    onCardClick = { cardId -> navController.navigate("borrowed_card_detail/$cardId") },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "borrowed_card_detail/{cardId}",
+                arguments = listOf(navArgument("cardId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getInt("cardId") ?: 0
+                val borrowedViewModel: BorrowedCardsViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return BorrowedCardsViewModel(RetrofitClient.apiService) as T
+                        }
+                    }
+                )
+                BorrowedCardDetailScreen(
+                    cardId = cardId,
+                    viewModel = borrowedViewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("search") {

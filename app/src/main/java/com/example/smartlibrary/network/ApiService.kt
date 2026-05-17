@@ -1,14 +1,8 @@
 package com.example.smartlibrary.network
 
+import okhttp3.RequestBody
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Path
-import retrofit2.http.Query
-import retrofit2.http.DELETE
-import retrofit2.http.HTTP
-import retrofit2.http.PUT
+import retrofit2.http.*
 
 interface ApiService {
     @GET("api/book")
@@ -72,6 +66,29 @@ interface ApiService {
 
     @POST("api/chat")
     suspend fun sendChatMessage(@Body request: ChatRequest): ChatResponse
+
+    // --- Profile API ---
+    @GET("api/user/{id}")
+    suspend fun getUserProfile(@Path("id") id: String): UserProfileResponse
+
+    @PUT("api/user/{id}")
+    suspend fun updateUserProfile(@Path("id") id: String, @Body updates: Map<String, String?>): Response<UserProfileResponse>
+
+    @POST("api/user/upload-avatar")
+    suspend fun uploadAvatar(@Body body: RequestBody): Response<AvatarResponse>
+
+    @POST("api/user/verify-email-update")
+    suspend fun verifyEmailUpdate(@Body body: VerifyOtpRequest): Response<UserProfileResponse>
+
+    // --- Borrow Cards API ---
+    @POST("api/borrow-cards/user/{userId}")
+    suspend fun getBorrowCardsByUser(@Path("userId") userId: String): List<BorrowCardResponse>
+
+    @GET("api/borrow-cards/{id}")
+    suspend fun getBorrowCardById(@Path("id") id: String): BorrowCardDetailResponse
+
+    @DELETE("api/borrow-cards/{id}")
+    suspend fun deleteBorrowCard(@Path("id") id: String): Response<Unit>
 }
 
 data class BookResponse(
@@ -141,4 +158,71 @@ data class ChatRequest(
 data class ChatResponse(
     val reply: String,
     val status: String = "success"
+)
+
+// --- User Profile Responses ---
+data class UserProfileResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: UserDataResponse
+)
+
+data class UserDataResponse(
+    val id: Int?,
+    val fullname: String?,
+    val email: String?,
+    val phone: String?,
+    val birthdate: String?,
+    val joined_date: String?,
+    val avatar_url: String?
+)
+
+data class AvatarResponse(
+    val status: String?,
+    val message: String?,
+    val data: AvatarData
+)
+
+data class AvatarData(
+    val avatar_url: String?
+)
+
+data class VerifyOtpRequest(
+    val id: String,
+    val email: String,
+    val otp: String
+)
+
+// --- Borrow Card Data Classes ---
+data class BorrowCardResponse(
+    val id: Int,
+    val userId: Int,
+    val borrowDate: String?,
+    val dueDate: String?,
+    val getBookDate: String?,
+    val status: String?,
+    val soNgayTre: Int?,
+    val bookIds: List<BorrowedBookBrief>? = null
+)
+
+data class BorrowedBookBrief(
+    val bookId: Int,
+    val name: String?,
+    val author: String?,
+    val image: String?,
+    val category: String?,
+    val publisher: String?,
+    val borrowCount: Int?
+)
+
+data class BorrowCardDetailResponse(
+    val id: Int,
+    val userId: Int,
+    val userName: String?,
+    val borrowDate: String?,
+    val dueDate: String?,
+    val getBookDate: String?,
+    val status: String?,
+    val totalBooks: Int?,
+    val bookIds: List<BorrowedBookBrief>?
 )

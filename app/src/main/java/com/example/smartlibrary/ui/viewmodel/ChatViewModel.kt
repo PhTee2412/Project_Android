@@ -101,7 +101,7 @@ class ChatViewModel(private val apiService: ApiService) : ViewModel() {
         _messages.value = listOf(
             ChatMessage(
                 id = System.currentTimeMillis(),
-                text = "Xin chào! Tui là Hehe - trợ lý thư viện. Tui có thể giúp gì được cho bạnn? \n\nLưu ý: phiên làm việc sẽ được tự động làm mới khi bạn đăng xuất/ đóng ứng dụng nhé!!",
+                text = "Xin chào! Tui là Hehe - trợ lý thư viện. Tui có thể giúp gì được cho bạn? \n\nLưu ý: Phiên làm việc sẽ được tự động làm mới khi bạn đăng xuất/ đóng ứng dụng nhé!!",
                 isUser = false,
                 timestamp = System.currentTimeMillis()
             )

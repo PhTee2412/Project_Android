@@ -82,7 +82,7 @@ fun CartScreen(
                             }
                             Button(
                                 onClick = { viewModel.borrowSelected() },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76))
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4))
                             ) {
                                 Text("Mượn sách")
                             }
@@ -125,7 +125,10 @@ fun CartScreen(
                                 .fillMaxWidth()
                                 .clickable { onBookClick(book.maSach) },
                             shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFE3F2FD)  // màu nền xanh nhạt
+                            )
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
