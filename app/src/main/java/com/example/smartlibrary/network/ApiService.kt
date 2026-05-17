@@ -187,6 +187,7 @@ data class UserDataResponse(
     val id: Int?,
     val fullname: String?,
     val email: String?,
+    val username: String? = null, // Added username
     val phone: String?,
     val birthdate: String?,
     val joined_date: String?,

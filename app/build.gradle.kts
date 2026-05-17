@@ -59,6 +59,9 @@ dependencies {
 
     // Coil for image loading
     implementation(libs.coil.compose)
+    
+    // QR Code generation - Updated to latest version
+    implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
