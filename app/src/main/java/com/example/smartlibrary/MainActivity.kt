@@ -21,22 +21,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AppBottomBar
 import com.example.smartlibrary.ui.components.AppHeader
-import com.example.smartlibrary.ui.screens.HomeScreen
-import com.example.smartlibrary.ui.screens.SearchScreen
-import com.example.smartlibrary.ui.screens.BookDetailScreen
-import com.example.smartlibrary.ui.screens.CategoriesScreen
-import com.example.smartlibrary.ui.screens.AboutScreen
-import com.example.smartlibrary.ui.screens.NewsScreen
-import com.example.smartlibrary.ui.screens.NewsDetailScreen
-import com.example.smartlibrary.ui.screens.CartScreen
-import com.example.smartlibrary.ui.screens.NotificationScreen
+import com.example.smartlibrary.ui.screens.*
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
-import com.example.smartlibrary.ui.viewmodel.MainViewModel
-import com.example.smartlibrary.ui.viewmodel.BookDetailViewModel
-import com.example.smartlibrary.ui.viewmodel.CategoriesViewModel
-import com.example.smartlibrary.ui.viewmodel.NewsViewModel
-import com.example.smartlibrary.ui.viewmodel.CartViewModel
-import com.example.smartlibrary.ui.viewmodel.NotificationViewModel
+import com.example.smartlibrary.ui.viewmodel.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
@@ -79,11 +66,29 @@ fun MainApp(
     val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Khởi tạo ChatViewModel với Factory để cung cấp apiService
+    val chatViewModel: ChatViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return ChatViewModel(RetrofitClient.apiService) as T
+            }
+        }
+    )
+
+    // Xóa lịch sử chat khi logout
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn) {
+            chatViewModel.clearChat()
+        }
+    }
+
     // NewsViewModel dùng chung cho NewsScreen và NewsDetailScreen
     val newsViewModel: NewsViewModel = viewModel()
 
-    // Chỉ hiện Header và BottomBar ở các màn hình chính
+    // Ẩn Header và BottomBar ở màn hình search, chat và detail
     val showBars = currentRoute != "search" && 
+                   currentRoute != "chat" &&
                    currentRoute?.startsWith("book_detail") != true &&
                    currentRoute?.startsWith("news_detail") != true
 
@@ -99,7 +104,8 @@ fun MainApp(
                     onNotificationClick = { navController.navigate("notifications") },
                     onProfileClick = { },
                     onLoginClick = { viewModel.toggleLogin() },
-                    onChatClick = { viewModel.showChatBot() }
+                    onChatClick = { navController.navigate("chat") },
+                    onLogoutClick = { viewModel.toggleLogin() } // Giả lập logout bằng cách toggle
                 )
             }
         },
@@ -124,7 +130,7 @@ fun MainApp(
                 HomeScreen(
                     viewModel = viewModel,
                     onBookClick = { bookId -> navController.navigate("book_detail/$bookId") },
-                    onChatBotClick = { }
+                    onChatBotClick = { navController.navigate("chat") }
                 )
             }
             composable("categories") { 
@@ -203,6 +209,12 @@ fun MainApp(
                     onBookClick = { bookId -> navController.navigate("book_detail/$bookId") }
                 )
             }
+            composable("chat") {
+                ChatScreen(
+                    viewModel = chatViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable(
                 route = "book_detail/{bookId}",
                 arguments = listOf(navArgument("bookId") { type = NavType.StringType })
@@ -224,12 +236,5 @@ fun MainApp(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun PlaceholderScreen(name: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Màn hình $name", style = MaterialTheme.typography.headlineMedium)
     }
 }
