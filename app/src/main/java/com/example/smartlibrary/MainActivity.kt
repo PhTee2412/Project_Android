@@ -102,6 +102,7 @@ fun MainApp(
                    currentRoute != "profile" &&
                    currentRoute != "borrowed_cards" &&
                    currentRoute != "fines" &&
+                   currentRoute != "change_password" &&
                    currentRoute?.startsWith("fine_detail") != true &&
                    currentRoute?.startsWith("borrowed_card_detail") != true &&
                    currentRoute?.startsWith("book_detail") != true &&
@@ -122,6 +123,7 @@ fun MainApp(
                     onChatClick = { navController.navigate("chat") },
                     onBorrowedCardsClick = { navController.navigate("borrowed_cards") },
                     onFineClick = { navController.navigate("fines") },
+                    onChangePasswordClick = { navController.navigate("change_password") },
                     onLogoutClick = { viewModel.toggleLogin() }
                 )
             }
@@ -225,6 +227,20 @@ fun MainApp(
                 )
                 ProfileScreen(
                     viewModel = profileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("change_password") {
+                val changePasswordViewModel: ChangePasswordViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return ChangePasswordViewModel(RetrofitClient.apiService) as T
+                        }
+                    }
+                )
+                ChangePasswordScreen(
+                    viewModel = changePasswordViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }

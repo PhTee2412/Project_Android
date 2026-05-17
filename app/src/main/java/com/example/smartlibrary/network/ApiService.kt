@@ -80,6 +80,9 @@ interface ApiService {
     @POST("api/user/verify-email-update")
     suspend fun verifyEmailUpdate(@Body body: VerifyOtpRequest): Response<UserProfileResponse>
 
+    @PUT("api/change-password")
+    suspend fun changePassword(@Body body: ChangePasswordRequest): Response<ChangePasswordResponse>
+
     // --- Borrow Cards API ---
     @POST("api/borrow-cards/user/{userId}")
     suspend fun getBorrowCardsByUser(@Path("userId") userId: String): List<BorrowCardResponse>
@@ -204,6 +207,17 @@ data class VerifyOtpRequest(
     val id: String,
     val email: String,
     val otp: String
+)
+
+data class ChangePasswordRequest(
+    val id: String,
+    val oldPassword: String,
+    val newPassword: String
+)
+
+data class ChangePasswordResponse(
+    val message: String? = null,
+    val status: String? = null
 )
 
 // --- Borrow Card Data Classes ---
