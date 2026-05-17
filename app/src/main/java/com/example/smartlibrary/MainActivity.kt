@@ -86,11 +86,23 @@ fun MainApp(
     // NewsViewModel dùng chung cho NewsScreen và NewsDetailScreen
     val newsViewModel: NewsViewModel = viewModel()
 
+    // FinesViewModel dùng chung cho FinesScreen và FineDetailScreen
+    val finesViewModel: FinesViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return FinesViewModel(RetrofitClient.apiService) as T
+            }
+        }
+    )
+
     // Ẩn Header và BottomBar ở các màn hình chi tiết hoặc chức năng đặc biệt
     val showBars = currentRoute != "search" && 
                    currentRoute != "chat" &&
                    currentRoute != "profile" &&
                    currentRoute != "borrowed_cards" &&
+                   currentRoute != "fines" &&
+                   currentRoute?.startsWith("fine_detail") != true &&
                    currentRoute?.startsWith("borrowed_card_detail") != true &&
                    currentRoute?.startsWith("book_detail") != true &&
                    currentRoute?.startsWith("news_detail") != true
@@ -109,6 +121,7 @@ fun MainApp(
                     onLoginClick = { viewModel.toggleLogin() },
                     onChatClick = { navController.navigate("chat") },
                     onBorrowedCardsClick = { navController.navigate("borrowed_cards") },
+                    onFineClick = { navController.navigate("fines") },
                     onLogoutClick = { viewModel.toggleLogin() }
                 )
             }
@@ -246,6 +259,24 @@ fun MainApp(
                 BorrowedCardDetailScreen(
                     cardId = cardId,
                     viewModel = borrowedViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("fines") {
+                FinesScreen(
+                    viewModel = finesViewModel,
+                    onFineClick = { fineId -> navController.navigate("fine_detail/$fineId") },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "fine_detail/{fineId}",
+                arguments = listOf(navArgument("fineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val fineId = backStackEntry.arguments?.getString("fineId") ?: ""
+                FineDetailScreen(
+                    fineId = fineId,
+                    viewModel = finesViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }

@@ -122,8 +122,24 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
 
     private fun getMockData(): List<BorrowCardResponse> {
         val books = listOf(
-            BorrowedBookBrief(1, "Java Nâng Cao 1", "Đoàn Văn Ban", "https://example.com/java.jpg", "Sách Lập Trình", "NXB Trẻ", 5),
-            BorrowedBookBrief(2, "Kotlin for Android", "JetBrains", "https://example.com/kotlin.jpg", "Công nghệ", "NXB Giáo dục", 10)
+            BorrowedBookBrief(
+                bookId = 1,
+                name = "Java Nâng Cao 1",
+                author = "Đoàn Văn Ban",
+                image = "https://example.com/java.jpg",
+                category = "Sách Lập Trình",
+                publisher = "NXB Trẻ",
+                borrowCount = 5
+            ),
+            BorrowedBookBrief(
+                bookId = 2,
+                name = "Kotlin for Android",
+                author = "JetBrains",
+                image = "https://example.com/kotlin.jpg",
+                category = "Công nghệ",
+                publisher = "NXB Giáo dục",
+                borrowCount = 10
+            )
         )
         return listOf(
             BorrowCardResponse(14, 2, "2026-05-12", null, "2026-05-15", "Đã yêu cầu", 0, books),

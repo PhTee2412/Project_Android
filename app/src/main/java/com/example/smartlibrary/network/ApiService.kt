@@ -89,6 +89,19 @@ interface ApiService {
 
     @DELETE("api/borrow-cards/{id}")
     suspend fun deleteBorrowCard(@Path("id") id: String): Response<Unit>
+
+    // --- Fines API ---
+    @GET("api/fines/{userId}")
+    suspend fun getFinesByUser(@Path("userId") userId: String): List<FineResponse>
+
+    @GET("api/fine/{id}")
+    suspend fun getFineById(@Path("id") id: String): FineDetailResponse
+
+    @POST("api/fine/pay-momo/{id}")
+    suspend fun payFineByMomo(@Path("id") id: String): MomoPaymentResponse
+
+    @POST("api/fine/payment/confirm")
+    suspend fun confirmFinePayment(@Body body: ConfirmPaymentRequest): Response<Unit>
 }
 
 data class BookResponse(
@@ -207,12 +220,13 @@ data class BorrowCardResponse(
 
 data class BorrowedBookBrief(
     val bookId: Int,
+    val childBookId: String? = null,
     val name: String?,
     val author: String?,
     val image: String?,
     val category: String?,
     val publisher: String?,
-    val borrowCount: Int?
+    val borrowCount: Int? = null
 )
 
 data class BorrowCardDetailResponse(
@@ -226,3 +240,37 @@ data class BorrowCardDetailResponse(
     val totalBooks: Int?,
     val bookIds: List<BorrowedBookBrief>?
 )
+
+// --- Fines Data Classes ---
+data class FineResponse(
+    val id: Int,
+    val userId: UserBrief? = null,   // LUÔN là object (dựa trên code React)
+    val soTien: Double? = null,
+    val noiDung: String? = null,
+    val trangThai: String? = null,   // "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
+    val ngayThanhToan: String? = null
+)
+
+data class UserBrief(
+    val id: Int? = null,
+    val name: String? = null
+)
+
+data class FineDetailResponse(
+    val id: Int,
+    val userId: UserBrief? = null,
+    val soTien: Double? = null,
+    val noiDung: String? = null,
+    val trangThai: String? = null,
+    val ngayThanhToan: String? = null,
+    val cardId: BorrowCardInFine? = null,  // thông tin phiếu mượn (nếu có)
+    val tenND: String? = null
+)
+
+data class BorrowCardInFine(
+    val id: Int,
+    val borrowedBooks: List<BorrowedBookBrief>?
+)
+
+data class MomoPaymentResponse(val payUrl: String, val status: String?)
+data class ConfirmPaymentRequest(val orderId: String, val amount: String)
