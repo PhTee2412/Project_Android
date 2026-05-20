@@ -139,13 +139,14 @@ class CategoriesViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     private fun BookResponse.toBook() = Book(
-        id = maSach,
+        id = maSach.toString(),
         title = tenSach,
         author = tenTacGia,
         publisher = nxb,
         year = nam,
         imageSrc = hinhAnh?.firstOrNull()?.trim() ?: "",
-        available = (tongSoLuong - soLuongMuon - soLuongXoa) > 0,
+        // ĐỒNG BỘ TUYỆT ĐỐI: Tin tưởng hoàn toàn vào trangThai từ Backend (như MainViewModel)
+        available = trangThai == "CON_SAN",
         borrowCount = if (soLuongMuon >= 0) soLuongMuon else 0
     )
 }

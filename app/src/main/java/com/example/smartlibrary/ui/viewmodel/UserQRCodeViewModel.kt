@@ -2,7 +2,9 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.network.ApiService
+import com.example.smartlibrary.network.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,10 @@ data class UserQRInfo(
     val avatarUrl: String?
 )
 
-class UserQRCodeViewModel(private val apiService: ApiService) : ViewModel() {
+class UserQRCodeViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
     private val _userInfo = MutableStateFlow<UserQRInfo?>(null)
     val userInfo: StateFlow<UserQRInfo?> = _userInfo.asStateFlow()
 
@@ -26,44 +31,34 @@ class UserQRCodeViewModel(private val apiService: ApiService) : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
+
     init {
-        loadUserData("user123") // Mock userId
+        if (userId.isNotEmpty()) {
+            loadUserData()
+        }
     }
 
-    fun loadUserData(userId: String) {
+    fun loadUserData() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                val response = apiService.getUserProfile(userId)
-                if (response.status == "success" || response.data != null) {
-                    val data = response.data
-                    _userInfo.value = UserQRInfo(
-                        id = data.id?.toString() ?: "N/A",
-                        fullname = data.fullname ?: "N/A",
-                        email = data.email ?: "N/A",
-                        username = data.username ?: "N/A",
-                        avatarUrl = data.avatar_url
-                    )
-                } else {
-                    useMockData()
-                }
+                val user = apiService.getUserProfile(userId) // Trả về User trực tiếp
+                _userInfo.value = UserQRInfo(
+                    id = user.id.toString(),
+                    fullname = user.fullname ?: "N/A",
+                    email = user.email ?: "N/A",
+                    username = user.username ?: "N/A",
+                    avatarUrl = user.avatar_url
+                )
             } catch (e: Exception) {
-                // Fallback to mock data if API fails
-                useMockData()
+                _error.value = "Lỗi tải thông tin: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
         }
-    }
-
-    private fun useMockData() {
-        _userInfo.value = UserQRInfo(
-            id = "23521468",
-            fullname = "Lê Thị Phương Thảo",
-            email = "phtee2412@gmail.com",
-            username = "PhTee",
-            avatarUrl = null
-        )
     }
 }

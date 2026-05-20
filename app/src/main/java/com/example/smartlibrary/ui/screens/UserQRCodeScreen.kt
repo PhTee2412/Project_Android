@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.smartlibrary.ui.viewmodel.UserQRCodeViewModel
 import qrcode.QRCode
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserQRCodeScreen(
@@ -106,12 +107,17 @@ fun UserQRCodeScreen(
                     // QR Code
                     val qrBitmap = remember(user.id) {
                         try {
-                            QRCode(user.id).render().nativeImage() as Bitmap
+                            val qrImage = QRCode(user.id).render().nativeImage() as Bitmap
+                            // Tạo bitmap mới với white background
+                            val bitmapWithBg = Bitmap.createBitmap(qrImage.width, qrImage.height, Bitmap.Config.ARGB_8888)
+                            val canvas = android.graphics.Canvas(bitmapWithBg)
+                            canvas.drawColor(android.graphics.Color.WHITE)
+                            canvas.drawBitmap(qrImage, 0f, 0f, null)
+                            bitmapWithBg
                         } catch (e: Exception) {
                             null
                         }
                     }
-
                     Box(
                         modifier = Modifier
                             .size(260.dp)
@@ -136,7 +142,7 @@ fun UserQRCodeScreen(
                     // Download Button
                     Button(
                         onClick = {
-                            qrBitmap?.let { 
+                            qrBitmap?.let {
                                 saveImageToGallery(context, it, "QR_${user.username}.png")
                             } ?: Toast.makeText(context, "Không có mã QR để tải", Toast.LENGTH_SHORT).show()
                         },

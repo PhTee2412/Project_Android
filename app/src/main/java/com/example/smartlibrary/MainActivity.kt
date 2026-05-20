@@ -1,16 +1,14 @@
 package com.example.smartlibrary
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,17 +26,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.smartlibrary.data.SessionManager
+import com.facebook.CallbackManager
+import com.facebook.FacebookSdk
 
 class MainActivity : ComponentActivity() {
+
+    lateinit var callbackManager: CallbackManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        FacebookSdk.fullyInitialize()
+        callbackManager = CallbackManager.Factory.create()
+
+        val sessionManager = SessionManager(this)
+
         enableEdgeToEdge()
         setContent {
             val mainViewModel: MainViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
-                        return MainViewModel(RetrofitClient.apiService) as T
+                        return MainViewModel(RetrofitClient.apiService, sessionManager) as T
                     }
                 }
             )
@@ -46,15 +56,23 @@ class MainActivity : ComponentActivity() {
             var isDarkMode by remember { mutableStateOf(false) }
 
             SmartLibraryTheme(darkTheme = isDarkMode) {
-                MainApp(mainViewModel)
+                MainApp(mainViewModel, sessionManager)
             }
         }
+    }
+
+    @Deprecated("Override for Facebook SDK compatibility")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        callbackManager.onActivityResult(requestCode, resultCode, data)
     }
 }
 
 @Composable
 fun MainApp(
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    sessionManager: SessionManager
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -66,48 +84,54 @@ fun MainApp(
     val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Khởi tạo ChatViewModel với Factory để cung cấp apiService
-    val chatViewModel: ChatViewModel = viewModel(
+    // Khởi tạo các ViewModel dùng chung (Scoped to Activity/MainApp)
+    val borrowedViewModel: BorrowedCardsViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return ChatViewModel(RetrofitClient.apiService) as T
+                return BorrowedCardsViewModel(RetrofitClient.apiService, sessionManager) as T
             }
         }
     )
 
-    // Xóa lịch sử chat khi logout
+    val chatViewModel: ChatViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return ChatViewModel(RetrofitClient.apiService, sessionManager) as T
+            }
+        }
+    )
+
+    val finesViewModel: FinesViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return FinesViewModel(RetrofitClient.apiService, sessionManager) as T
+            }
+        }
+    )
+
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
             chatViewModel.clearChat()
         }
     }
 
-    // NewsViewModel dùng chung cho NewsScreen và NewsDetailScreen
     val newsViewModel: NewsViewModel = viewModel()
 
-    // FinesViewModel dùng chung cho FinesScreen và FineDetailScreen
-    val finesViewModel: FinesViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return FinesViewModel(RetrofitClient.apiService) as T
-            }
-        }
-    )
-
-    // Ẩn Header và BottomBar ở các màn hình chi tiết hoặc chức năng đặc biệt
-    val showBars = currentRoute != "search" && 
-                   currentRoute != "chat" &&
-                   currentRoute != "profile" &&
-                   currentRoute != "borrowed_cards" &&
-                   currentRoute != "fines" &&
-                   currentRoute != "change_password" &&
-                   currentRoute != "user_qrcode" &&
-                   currentRoute?.startsWith("fine_detail") != true &&
-                   currentRoute?.startsWith("borrowed_card_detail") != true &&
-                   currentRoute?.startsWith("book_detail") != true &&
-                   currentRoute?.startsWith("news_detail") != true
+    val showBars = currentRoute != "search" &&
+            currentRoute != "chat" &&
+            currentRoute != "profile" &&
+            currentRoute != "borrowed_cards" &&
+            currentRoute != "fines" &&
+            currentRoute != "change_password" &&
+            currentRoute != "user_qrcode" &&
+            currentRoute != "login" &&
+            currentRoute?.startsWith("fine_detail") != true &&
+            currentRoute?.startsWith("borrowed_card_detail") != true &&
+            currentRoute?.startsWith("book_detail") != true &&
+            currentRoute?.startsWith("news_detail") != true
 
     Scaffold(
         topBar = {
@@ -120,13 +144,18 @@ fun MainApp(
                     onCartClick = { navController.navigate("cart") },
                     onNotificationClick = { navController.navigate("notifications") },
                     onProfileClick = { navController.navigate("profile") },
-                    onLoginClick = { viewModel.toggleLogin() },
+                    onLoginClick = { navController.navigate("login") },
                     onChatClick = { navController.navigate("chat") },
                     onBorrowedCardsClick = { navController.navigate("borrowed_cards") },
                     onFineClick = { navController.navigate("fines") },
                     onChangePasswordClick = { navController.navigate("change_password") },
                     onQRCodeClick = { navController.navigate("user_qrcode") },
-                    onLogoutClick = { viewModel.toggleLogin() }
+                    onLogoutClick = {
+                        viewModel.logout()
+                        navController.navigate("home") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 )
             }
         },
@@ -154,7 +183,30 @@ fun MainApp(
                     onChatBotClick = { navController.navigate("chat") }
                 )
             }
-            composable("categories") { 
+            composable("login") {
+                val authViewModel: AuthViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return AuthViewModel(
+                                apiService = RetrofitClient.apiService,
+                                sessionManager = sessionManager,
+                                onLoginSuccess = {
+                                    viewModel.setLoggedIn(true)
+                                    navController.navigate("home") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            ) as T
+                        }
+                    }
+                )
+                AuthScreen(
+                    viewModel = authViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("categories") {
                 val categoriesViewModel: CategoriesViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -169,7 +221,7 @@ fun MainApp(
                 )
             }
             composable("about") { AboutScreen(navController = navController) }
-            composable("news") { 
+            composable("news") {
                 NewsScreen(
                     viewModel = newsViewModel,
                     onNewsClick = { news ->
@@ -191,6 +243,7 @@ fun MainApp(
                             @Suppress("UNCHECKED_CAST")
                             return CartViewModel(
                                 apiService = RetrofitClient.apiService,
+                                sessionManager = sessionManager,
                                 onCartCountChanged = { count -> viewModel.setCartCount(count) }
                             ) as T
                         }
@@ -208,6 +261,7 @@ fun MainApp(
                             @Suppress("UNCHECKED_CAST")
                             return NotificationViewModel(
                                 apiService = RetrofitClient.apiService,
+                                sessionManager = sessionManager,
                                 onUnreadCountChanged = { count -> viewModel.setUnreadNotificationCount(count) }
                             ) as T
                         }
@@ -215,7 +269,7 @@ fun MainApp(
                 )
                 NotificationScreen(
                     viewModel = notificationViewModel,
-                    userId = "user123" // Mock userId
+                    userId = sessionManager.getUserId() ?: ""
                 )
             }
             composable("profile") {
@@ -223,7 +277,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return ProfileViewModel(RetrofitClient.apiService) as T
+                            return ProfileViewModel(RetrofitClient.apiService, sessionManager) as T
                         }
                     }
                 )
@@ -237,7 +291,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return ChangePasswordViewModel(RetrofitClient.apiService) as T
+                            return ChangePasswordViewModel(RetrofitClient.apiService, sessionManager) as T
                         }
                     }
                 )
@@ -251,7 +305,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return UserQRCodeViewModel(RetrofitClient.apiService) as T
+                            return UserQRCodeViewModel(RetrofitClient.apiService, sessionManager) as T
                         }
                     }
                 )
@@ -261,16 +315,8 @@ fun MainApp(
                 )
             }
             composable("borrowed_cards") {
-                val borrowedViewModel: BorrowedCardsViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            @Suppress("UNCHECKED_CAST")
-                            return BorrowedCardsViewModel(RetrofitClient.apiService) as T
-                        }
-                    }
-                )
                 BorrowedCardsScreen(
-                    viewModel = borrowedViewModel,
+                    viewModel = borrowedViewModel, // Dùng chung instance
                     onCardClick = { cardId -> navController.navigate("borrowed_card_detail/$cardId") },
                     onBack = { navController.popBackStack() }
                 )
@@ -280,17 +326,9 @@ fun MainApp(
                 arguments = listOf(navArgument("cardId") { type = NavType.IntType })
             ) { backStackEntry ->
                 val cardId = backStackEntry.arguments?.getInt("cardId") ?: 0
-                val borrowedViewModel: BorrowedCardsViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            @Suppress("UNCHECKED_CAST")
-                            return BorrowedCardsViewModel(RetrofitClient.apiService) as T
-                        }
-                    }
-                )
                 BorrowedCardDetailScreen(
                     cardId = cardId,
-                    viewModel = borrowedViewModel,
+                    viewModel = borrowedViewModel, // Dùng chung instance
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -339,14 +377,14 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return BookDetailViewModel(RetrofitClient.apiService, bookId) as T
+                            return BookDetailViewModel(RetrofitClient.apiService, sessionManager, bookId) as T
                         }
                     }
                 )
                 BookDetailScreen(
                     viewModel = detailViewModel,
                     isLoggedIn = isLoggedIn,
-                    onLoginRequired = { viewModel.toggleLogin() },
+                    onLoginRequired = { navController.navigate("login") },
                     onBack = { navController.popBackStack() }
                 )
             }

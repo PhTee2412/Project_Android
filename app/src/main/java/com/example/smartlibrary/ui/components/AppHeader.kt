@@ -16,7 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.smartlibrary.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppHeader(
@@ -45,12 +47,10 @@ fun AppHeader(
     ) {
         TopAppBar(
             title = {
-                Text(
-                    text = "BOOK",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                Image(
+                    painter = painterResource(id = R.drawable.logo),  // tên file logo.png
+                    contentDescription = "Logo",
+                    modifier = Modifier.height(40.dp)  // điều chỉnh chiều cao phù hợp
                 )
             },
             actions = {

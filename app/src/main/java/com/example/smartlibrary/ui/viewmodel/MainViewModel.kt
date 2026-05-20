@@ -2,6 +2,7 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.data.model.Book
 import com.example.smartlibrary.network.ApiService
 import com.example.smartlibrary.network.BookResponse
@@ -12,9 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MainViewModel(private val apiService: ApiService) : ViewModel() {
+class MainViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
-    private val _isLoggedIn = MutableStateFlow(false)
+    private val _isLoggedIn = MutableStateFlow(sessionManager.isLoggedIn())
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     private val _cartCount = MutableStateFlow(0)
@@ -41,75 +45,49 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
     private val _displayedCount = MutableStateFlow(12)
     val displayedCount: StateFlow<Int> = _displayedCount.asStateFlow()
 
-    private val _isChatBotVisible = MutableStateFlow(true)
-    val isChatBotVisible: StateFlow<Boolean> = _isChatBotVisible.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _isChatBotVisible = MutableStateFlow(true)
+    val isChatBotVisible: StateFlow<Boolean> = _isChatBotVisible.asStateFlow()
 
     init {
         loadHomeData()
         startSidebarRotation()
+        if (sessionManager.isLoggedIn()) {
+            loadCartCount()
+            loadNotificationCount()
+        }
     }
 
-    private fun loadHomeData() {
+    fun loadHomeData() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Load all books first
                 val response = apiService.getAllBooks()
                 _allBooks.value = response.filter { it.trangThai != "DA_XOA" }.map { it.toBook() }
-                println("Loaded ${response.size} books from API")
 
-                // If no books loaded, add some mock data
-                if (_allBooks.value.isEmpty()) {
-                    _allBooks.value = getMockBooks()
-                    println("Using mock data for allBooks")
+                val userId = sessionManager.getUserId()
+                if (userId != null) {
+                    val keywords = listOf("sách mới", "phổ biến")
+                    val suggestions = apiService.getSuggestedBooks(SuggestRequest(userId, keywords))
+                    var mappedSuggestions = suggestions.map { it.toBook() }
+                    
+                    if (mappedSuggestions.size < 6) {
+                        val fillers = _allBooks.value.take(6 - mappedSuggestions.size)
+                        mappedSuggestions = mappedSuggestions + fillers
+                    }
+                    _suggestedBooks.value = mappedSuggestions
+                } else {
+                    _suggestedBooks.value = _allBooks.value.take(6)
                 }
-
-                // Giả lập lấy userId và keywords
-                val userId = "user123" 
-                val keywords = listOf("java", "kotlin")
-                
-                val suggestions = apiService.getSuggestedBooks(SuggestRequest(userId, keywords))
-                println("Loaded ${suggestions.size} suggestions from API")
-                var mappedSuggestions = suggestions.map { it.toBook() }
-                
-                if (mappedSuggestions.size < 6) {
-                    val existingIds = mappedSuggestions.map { it.id }.toSet()
-                    val fillers = _allBooks.value.filter { !existingIds.contains(it.id) }.take(6 - mappedSuggestions.size)
-                    mappedSuggestions = mappedSuggestions + fillers
-                }
-                _suggestedBooks.value = mappedSuggestions
                 
                 updateSidebarBooks()
             } catch (e: Exception) {
-                e.printStackTrace()
-                println("API failed, using mock data")
-                // If API fails, load mock data
-                _allBooks.value = getMockBooks()
-                _suggestedBooks.value = getMockBooks().take(6)
                 updateSidebarBooks()
             } finally {
                 _isLoading.value = false
             }
-        }
-    }
-
-    fun loadBooks() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            loadBooksInternal()
-            _isLoading.value = false
-        }
-    }
-
-    private suspend fun loadBooksInternal() {
-        try {
-            val response = apiService.getAllBooks()
-            _allBooks.value = response.filter { it.trangThai != "DA_XOA" }.map { it.toBook() }
-        } catch (e: Exception) {
-            // handle error
         }
     }
 
@@ -147,12 +125,28 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
         }
     }
 
-    fun setChatBotVisibility(visible: Boolean) {
-        _isChatBotVisible.value = visible
+    private fun loadCartCount() {
+        val userId = sessionManager.getUserId() ?: return
+        viewModelScope.launch {
+            try {
+                val response = apiService.getCart(userId)
+                val count = response.data?.size ?: 0
+                _cartCount.value = count
+            } catch (e: Exception) {
+            }
+        }
     }
 
-    fun showChatBot() {
-        _isChatBotVisible.value = true
+    private fun loadNotificationCount() {
+        val userId = sessionManager.getUserId() ?: return
+        viewModelScope.launch {
+            try {
+                val notifications = apiService.getNotifications(userId)
+                val unreadCount = notifications.count { !it.isRead }
+                _unreadNotificationCount.value = unreadCount
+            } catch (e: Exception) {
+            }
+        }
     }
 
     fun setCartCount(count: Int) {
@@ -163,30 +157,32 @@ class MainViewModel(private val apiService: ApiService) : ViewModel() {
         _unreadNotificationCount.value = count
     }
 
+    fun setLoggedIn(value: Boolean) {
+        _isLoggedIn.value = value
+        if (value) loadHomeData()
+    }
+
+    fun setChatBotVisibility(visible: Boolean) {
+        _isChatBotVisible.value = visible
+    }
+
+    fun logout() {
+        sessionManager.clearSession()
+        _isLoggedIn.value = false
+        _cartCount.value = 0
+        _unreadNotificationCount.value = 0
+        _suggestedBooks.value = _allBooks.value.take(6)
+    }
+
     private fun BookResponse.toBook() = Book(
-        id = maSach,
+        id = maSach.toString(),
         title = tenSach,
         author = tenTacGia,
         publisher = nxb,
         year = nam,
         imageSrc = hinhAnh?.firstOrNull()?.trim() ?: "",
-        available = (tongSoLuong - soLuongMuon - soLuongXoa) > 0,
+        // ĐỒNG BỘ TUYỆT ĐỐI: Tin tưởng hoàn toàn vào trangThai từ Backend
+        available = trangThai == "CON_SAN",
         borrowCount = if (soLuongMuon >= 0) soLuongMuon else 0
     )
-
-    fun toggleLogin() {
-        _isLoggedIn.value = !_isLoggedIn.value
-    }
-
-    private fun getMockBooks(): List<Book> {
-        // Return a list of mock books
-        return listOf(
-            Book("1", "Mock Book 1", "Author 1", "Publisher 1", 2021, "", true, 0),
-            Book("2", "Mock Book 2", "Author 2", "Publisher 2", 2022, "", true, 0),
-            Book("3", "Mock Book 3", "Author 3", "Publisher 3", 2023, "", true, 0),
-            Book("4", "Mock Book 4", "Author 4", "Publisher 4", 2024, "", true, 0),
-            Book("5", "Mock Book 5", "Author 5", "Publisher 5", 2025, "", true, 0),
-            Book("6", "Mock Book 6", "Author 6", "Publisher 6", 2026, "", true, 0)
-        )
-    }
 }

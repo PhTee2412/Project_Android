@@ -2,6 +2,7 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.network.ApiService
 import com.example.smartlibrary.network.BookResponse
 import com.example.smartlibrary.network.BorrowRequest
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class BookDetailViewModel(
     private val apiService: ApiService,
+    private val sessionManager: SessionManager,
     private val bookId: String
 ) : ViewModel() {
 
@@ -30,8 +32,14 @@ class BookDetailViewModel(
     private val _isAddedToCart = MutableStateFlow(false)
     val isAddedToCart: StateFlow<Boolean> = _isAddedToCart.asStateFlow()
 
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
+
     init {
         fetchBookDetails()
+        if (userId.isNotEmpty()) {
+            checkCartStatus()
+        }
     }
 
     private fun fetchBookDetails() {
@@ -50,11 +58,13 @@ class BookDetailViewModel(
         }
     }
 
-    fun checkCartStatus(userId: String) {
+    fun checkCartStatus() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             try {
                 val response = apiService.getCart(userId)
-                val found = response.data?.any { it.maSach == bookId } ?: false
+                val bookIdLong = bookId.toLongOrNull()
+                val found = response.data?.any { it.bookId == bookIdLong } ?: false
                 _isAddedToCart.value = found
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -62,7 +72,11 @@ class BookDetailViewModel(
         }
     }
 
-    fun borrowBook(userId: String, onSuccess: () -> Unit) {
+    fun borrowBook(onSuccess: () -> Unit) {
+        if (userId.isEmpty()) {
+            _message.value = "Bạn cần đăng nhập để mượn sách."
+            return
+        }
         viewModelScope.launch {
             try {
                 val bookIdInt = bookId.toIntOrNull()
@@ -70,7 +84,6 @@ class BookDetailViewModel(
                     _message.value = "ID sách không hợp lệ."
                     return@launch
                 }
-                // Next.js: { userId, bookIds: [parseInt(id)] }
                 val response = apiService.borrowBook(BorrowRequest(userId = userId, bookIds = listOf(bookIdInt)))
                 if (response.isSuccessful) {
                     _message.value = "Phiếu mượn đã được tạo thành công!"
@@ -84,19 +97,48 @@ class BookDetailViewModel(
         }
     }
 
-    fun addToCart(userId: String) {
+    fun addToCart() {
+        if (userId.isEmpty()) {
+            _message.value = "Bạn cần đăng nhập để thêm vào giỏ hàng."
+            return
+        }
+
+        // Kiểm tra nhanh local state trước khi gọi API
+        if (_isAddedToCart.value) {
+            _message.value = "Sách đã tồn tại trong giỏ"
+            return
+        }
+
         viewModelScope.launch {
             try {
-                // Next.js: POST /api/cart/{userId}/add/books body [id]
-                val response = apiService.addToCart(userId, listOf(bookId))
+                val bookIdLong = bookId.toLongOrNull()
+                if (bookIdLong == null) {
+                    _message.value = "ID sách không hợp lệ."
+                    return@launch
+                }
+                val response = apiService.addToCart(userId, listOf(bookIdLong))
                 if (response.isSuccessful) {
                     _message.value = "Đã thêm sách vào giỏ!"
                     _isAddedToCart.value = true
                 } else {
-                    _message.value = "Có lỗi xảy ra khi thêm sách vào giỏ."
+                    val errorBody = response.errorBody()?.string() ?: ""
+                    val errorMessage = if (errorBody.contains("already", ignoreCase = true) ||
+                                          errorBody.contains("trùng", ignoreCase = true) ||
+                                          errorBody.contains("already_in_cart", ignoreCase = true)) {
+                        "Sách đã tồn tại trong giỏ"
+                    } else {
+                        "Có lỗi xảy ra khi thêm sách vào giỏ."
+                    }
+                    _message.value = errorMessage
                 }
             } catch (e: Exception) {
-                _message.value = "Lỗi kết nối: ${e.localizedMessage}"
+                val errorMsg = e.message ?: ""
+                _message.value = if (errorMsg.contains("already", ignoreCase = true) ||
+                                    errorMsg.contains("trùng", ignoreCase = true)) {
+                    "Sách đã tồn tại trong giỏ"
+                } else {
+                    "Lỗi kết nối: $errorMsg"
+                }
             }
         }
     }

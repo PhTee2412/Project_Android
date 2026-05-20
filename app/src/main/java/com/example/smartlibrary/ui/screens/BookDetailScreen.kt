@@ -80,7 +80,6 @@ fun BookDetailScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Ảnh bìa sách
                         item {
                             AsyncImage(
                                 model = details.hinhAnh?.firstOrNull() ?: "",
@@ -93,7 +92,6 @@ fun BookDetailScreen(
                             )
                         }
 
-                        // Thông tin cơ bản
                         item {
                             Column(
                                 modifier = Modifier
@@ -102,6 +100,9 @@ fun BookDetailScreen(
                                     .background(Color(0xFFF0F7FF))
                                     .padding(16.dp)
                             ) {
+                                // CHỈNH SỬA TẠI ĐÂY: Đồng bộ với Backend TrangThai.CON_SAN
+                                val isAvailable = details.trangThai == "CON_SAN"
+
                                 Text(
                                     text = details.tenSach,
                                     fontSize = 18.sp,
@@ -126,8 +127,6 @@ fun BookDetailScreen(
                                     color = Color.Gray
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val isAvailable = (details.trangThai == "CON_SAN") || 
-                                                     ((details.tongSoLuong - details.soLuongMuon - details.soLuongXoa) > 0)
                                     Text(
                                         text = "Trạng thái: ${if (isAvailable) "Còn sẵn" else "Đã hết"}",
                                         fontSize = 14.sp,
@@ -157,13 +156,17 @@ fun BookDetailScreen(
                                     Button(
                                         onClick = { 
                                             if (isLoggedIn) {
-                                                viewModel.borrowBook("user123", onSuccess = {})
+                                                viewModel.borrowBook(onSuccess = {})
                                             } else {
                                                 onLoginRequired()
                                             }
                                         },
                                         modifier = Modifier.weight(1f).height(48.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF30C9E8)),
+                                        enabled = isAvailable, // Vô hiệu hóa nút nếu không sẵn
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF30C9E8),
+                                            disabledContainerColor = Color.LightGray
+                                        ),
                                         shape = RoundedCornerShape(24.dp)
                                     ) {
                                         Text("Mượn ngay", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
@@ -172,22 +175,30 @@ fun BookDetailScreen(
                                     OutlinedButton(
                                         onClick = { 
                                             if (isLoggedIn) {
-                                                viewModel.addToCart("user123")
+                                                viewModel.addToCart()
                                             } else {
                                                 onLoginRequired()
                                             }
                                         },
-                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        enabled = isAvailable, // Vô hiệu hóa nút nếu không sẵn
                                         shape = RoundedCornerShape(24.dp),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF062D76))
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            1.dp,
+                                            if (isAvailable) Color(0xFF062D76) else Color.LightGray
+                                        )
                                     ) {
-                                        Text("Thêm vào giỏ", fontSize = 14.sp, color = Color(0xFF062D76), fontWeight = FontWeight.Bold, maxLines = 1)
+                                        Text(
+                                            "Thêm vào giỏ",
+                                            fontSize = 14.sp,
+                                            color = if (isAvailable) Color(0xFF062D76) else Color.LightGray,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
                                     }
                                 }
                             }
                         }
 
-                        // Thông tin chi tiết
                         item {
                             Column(
                                 modifier = Modifier
@@ -198,7 +209,7 @@ fun BookDetailScreen(
                             ) {
                                 SectionHeader("Thông tin chi tiết")
                                 Spacer(modifier = Modifier.height(12.dp))
-                                DetailRow("Mã sách:", details.maSach)
+                                DetailRow("Mã sách:", details.maSach.toString())
                                 DetailRow("Năm XB:", details.nam?.toString() ?: "—")
                                 DetailRow("Trọng lượng:", "${details.trongLuong ?: 0} g")
                                 DetailRow("Đơn giá:", "${details.donGia?.toInt() ?: 0} đ")
@@ -206,7 +217,6 @@ fun BookDetailScreen(
                             }
                         }
 
-                        // Giới thiệu
                         item {
                             Column(
                                 modifier = Modifier
@@ -254,7 +264,7 @@ fun DetailRow(label: String, value: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.Start // Thay vì SpaceBetween
+        horizontalArrangement = Arrangement.Start
     ) {
         Text(
             text = "$label ",
@@ -265,7 +275,7 @@ fun DetailRow(label: String, value: String) {
         Text(
             text = value,
             fontSize = 14.sp,
-            color = Color(0xFF1A1A1A) // Đậm hơn một chút cho dễ đọc
+            color = Color(0xFF1A1A1A)
         )
     }
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -46,21 +47,22 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    
+
     // Retrofit & Networking
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    
+
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 
     // Coil for image loading
     implementation(libs.coil.compose)
-    
-    // QR Code generation - Updated to latest version
+
+    // QR Code generation
+    implementation(libs.qrcode.kotlin)
     implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
 
     testImplementation(libs.junit)
@@ -70,4 +72,14 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Google Sign-In (Credential Manager) - explicit coordinates to avoid version-catalog alias parsing issues
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("com.google.android.gms:play-services-auth:21.5.1")
+    // Google Identity (for GetGoogleIdOption / GoogleIdTokenCredential)
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
+    // Facebook Login
+    implementation("com.facebook.android:facebook-login:18.2.3")
+
 }

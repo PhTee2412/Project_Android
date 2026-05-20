@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape   // ✅ Thêm import này
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Message
@@ -32,7 +33,7 @@ import com.example.smartlibrary.ui.components.BookRecommendCard
 import com.example.smartlibrary.ui.components.ServiceHoursCard
 import com.example.smartlibrary.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
-import androidx.compose.foundation.shape.CircleShape
+
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
@@ -168,7 +169,10 @@ fun HomeScreen(
                             ),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(if (hasNextPage) "Xem thêm sách" else "Đã tải toàn bộ sách")
+                            Text(
+                                text = if (hasNextPage) "Xem thêm sách" else "Đã tải toàn bộ sách",
+                                color = Color.White
+                            )
                         }
                     }
                 }
@@ -193,7 +197,7 @@ fun HomeScreen(
                             .align(Alignment.TopEnd)
                             .offset(x = 8.dp, y = (-8).dp)
                             .size(18.dp)
-                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                            .background(Color.Black.copy(alpha = 0.6f), CircleShape) // CircleShape đã được import
                             .clickable { viewModel.setChatBotVisibility(false) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -209,7 +213,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 @Composable
 fun SliderSection() {

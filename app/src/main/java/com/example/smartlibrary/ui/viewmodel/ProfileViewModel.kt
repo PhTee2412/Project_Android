@@ -2,16 +2,23 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.data.model.UserInfo
 import com.example.smartlibrary.network.ApiService
-import kotlinx.coroutines.delay
+import com.example.smartlibrary.network.VerifyOtpRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
-class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
+class ProfileViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _userInfo = MutableStateFlow<UserInfo?>(null)
     val userInfo: StateFlow<UserInfo?> = _userInfo.asStateFlow()
@@ -34,28 +41,30 @@ class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
     private val _avatarFile = MutableStateFlow<File?>(null)
     val avatarFile: StateFlow<File?> = _avatarFile.asStateFlow()
 
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
+
     init {
         loadUserProfile()
     }
 
     fun loadUserProfile() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Giả lập gọi API với delay
-                delay(1000)
-                // Mock data
+                val user = apiService.getUserProfile(userId)   // Nhận User
                 _userInfo.value = UserInfo(
-                    fullName = "Nguyễn Văn A",
-                    email = "vana@example.com",
-                    phone = "0123456789",
-                    birthdate = "2000-01-01",
-                    joinDate = "2024-01-15",
-                    avatarUrl = null,
-                    studentId = "23521468"
+                    fullName = user.fullname ?: "",
+                    email = user.email ?: "",
+                    phone = user.phone ?: "",
+                    birthdate = user.birthdate,
+                    joinDate = user.joined_date,
+                    avatarUrl = user.avatar_url,
+                    studentId = user.id.toString()
                 )
             } catch (e: Exception) {
-                _message.value = "Không thể tải thông tin người dùng"
+                _message.value = "Không thể tải thông tin người dùng: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -86,8 +95,8 @@ class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
 
     fun updateProfile() {
         val currentInfo = _userInfo.value ?: return
+        if (userId.isEmpty()) return
         
-        // Validate đơn giản
         if (currentInfo.fullName.isBlank()) {
             _message.value = "Họ và tên không được để trống"
             return
@@ -96,21 +105,28 @@ class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(1500) // Giả lập network
-                
-                // Giả lập logic: nếu email thay đổi thì yêu cầu OTP
-                // Ở đây giả sử email gốc là vana@example.com
-                if (currentInfo.email != "vana@example.com" && !_isOtpSent.value) {
-                    _isOtpSent.value = true
-                    _message.value = "Vui lòng nhập OTP được gửi tới email mới"
+                val updates = mutableMapOf<String, String?>()
+                updates["fullname"] = currentInfo.fullName
+                updates["phone"] = currentInfo.phone
+                updates["birthdate"] = currentInfo.birthdate
+                updates["email"] = currentInfo.email
+
+                val response = apiService.updateUserProfile(userId, updates)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.status == "otp_sent") {
+                        _isOtpSent.value = true
+                        _message.value = "Vui lòng nhập OTP được gửi tới email mới"
+                    } else {
+                        _message.value = "Cập nhật thông tin thành công"
+                        _isEditing.value = false
+                        loadUserProfile()
+                    }
                 } else {
-                    // Cập nhật thành công
-                    _message.value = "Cập nhật thông tin thành công"
-                    _isEditing.value = false
-                    _isOtpSent.value = false
+                    _message.value = "Cập nhật thất bại"
                 }
             } catch (e: Exception) {
-                _message.value = "Có lỗi xảy ra khi cập nhật"
+                _message.value = "Lỗi: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -118,17 +134,28 @@ class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     fun uploadAvatar(file: File) {
+        if (userId.isEmpty()) return
         _avatarFile.value = file
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(2000)
-                // Giả lập upload thành công và nhận URL mới
-                _userInfo.value = _userInfo.value?.copy(avatarUrl = "https://example.com/new_avatar.png")
-                _message.value = "Upload ảnh đại diện thành công"
-                _avatarFile.value = null
+                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                val body = MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("id", userId)
+                    .addFormDataPart("avatar", file.name, requestFile)
+                    .build()
+
+                val response = apiService.uploadAvatar(body)
+                if (response.isSuccessful) {
+                    _userInfo.value = _userInfo.value?.copy(avatarUrl = response.body()?.data?.avatar_url)
+                    _message.value = "Upload ảnh đại diện thành công"
+                    _avatarFile.value = null
+                } else {
+                    _message.value = "Upload thất bại"
+                }
             } catch (e: Exception) {
-                _message.value = "Lỗi khi upload ảnh"
+                _message.value = "Lỗi upload: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -136,22 +163,28 @@ class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     fun verifyOtp() {
-        if (_otp.value.length != 6) {
-            _message.value = "Vui lòng nhập mã OTP hợp lệ (6 chữ số)"
+        if (_otp.value.length != 6 || userId.isEmpty()) {
+            _message.value = "Vui lòng nhập mã OTP hợp lệ"
             return
         }
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(1000)
-                // Giả lập xác thực thành công
-                _message.value = "Xác thực email thành công"
-                _isOtpSent.value = false
-                _isEditing.value = false
-                _otp.value = ""
+                val response = apiService.verifyEmailUpdate(
+                    VerifyOtpRequest(id = userId, email = _userInfo.value?.email ?: "", otp = _otp.value)
+                )
+                if (response.isSuccessful) {
+                    _message.value = "Xác thực email thành công"
+                    _isOtpSent.value = false
+                    _isEditing.value = false
+                    _otp.value = ""
+                    loadUserProfile()
+                } else {
+                    _message.value = "Xác thực thất bại"
+                }
             } catch (e: Exception) {
-                _message.value = "Xác thực OTP thất bại"
+                _message.value = "Lỗi xác thực: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }

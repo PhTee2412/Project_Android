@@ -18,20 +18,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.smartlibrary.network.BookResponse
+import com.example.smartlibrary.network.CartItemDTO
 import com.example.smartlibrary.ui.viewmodel.CartViewModel
 
 @Composable
 fun CartScreen(
     viewModel: CartViewModel,
-    onBookClick: (String) -> Unit
+    onBookClick: (String) -> Unit  // vẫn nhận String để điều hướng
 ) {
     val cartBooks by viewModel.cartBooks.collectAsState()
     val selectedIds by viewModel.selectedIds.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val message by viewModel.message.collectAsState()
+    val maxBorrowedBooks by viewModel.maxBorrowedBooks.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -50,42 +50,55 @@ fun CartScreen(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surface
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        // Nhóm Checkbox và Text lại gần nhau
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = selectedIds.size == cartBooks.size && cartBooks.isNotEmpty(),
-                                onCheckedChange = {
-                                    if (selectedIds.size == cartBooks.size) viewModel.deselectAll()
-                                    else viewModel.selectAll()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = selectedIds.size == cartBooks.size && cartBooks.isNotEmpty(),
+                                    onCheckedChange = {
+                                        if (selectedIds.size == cartBooks.size) viewModel.deselectAll()
+                                        else viewModel.selectAll()
+                                    }
+                                )
+                                Text(
+                                    text = "Đã chọn ${selectedIds.size}/${cartBooks.size}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { viewModel.deleteSelected() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                ) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Xóa")
                                 }
-                            )
-                            Text(
-                                text = "Đã chọn ${selectedIds.size}/${cartBooks.size}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                                Button(
+                                    onClick = { viewModel.borrowSelected() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
+                                    enabled = selectedIds.size <= maxBorrowedBooks
+                                ) {
+                                    Text("Mượn sách")
+                                }
+                            }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(
-                                onClick = { viewModel.deleteSelected() },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                            ) {
-                                Spacer(Modifier.width(4.dp))
-                                Text("Xóa")
-                            }
-                            Button(
-                                onClick = { viewModel.borrowSelected() },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4))
-                            ) {
-                                Text("Mượn sách")
-                            }
+                        if (selectedIds.size > maxBorrowedBooks) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Bạn chỉ được phép mượn tối đa $maxBorrowedBooks cuốn sách!",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFF44336)
+                            )
                         }
                     }
                 }
@@ -118,70 +131,68 @@ fun CartScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(cartBooks, key = { it.maSach }) { book ->
-                        val isSelected = book.maSach in selectedIds
+                    items(cartBooks, key = { it.bookId }) { book ->
+                        val isSelected = book.bookId in selectedIds
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onBookClick(book.maSach) },
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFE3F2FD)  // màu nền xanh nhạt
-                            )
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.Top
                             ) {
-                                // Checkbox
                                 Checkbox(
                                     checked = isSelected,
-                                    onCheckedChange = { viewModel.toggleSelection(book.maSach) },
+                                    onCheckedChange = { viewModel.toggleSelection(book.bookId) },
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
 
-                                // Ảnh bìa
-                                AsyncImage(
-                                    model = book.hinhAnh?.firstOrNull() ?: "",
-                                    contentDescription = book.tenSach,
+                                Row(
                                     modifier = Modifier
-                                        .size(width = 80.dp, height = 120.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
+                                        .weight(1f)
+                                        .clickable { onBookClick(book.bookId.toString()) } // dùng toString
+                                ) {
+                                    AsyncImage(
+                                        model = book.hinhAnh?.firstOrNull() ?: "",
+                                        contentDescription = book.tenSach,
+                                        modifier = Modifier
+                                            .size(width = 80.dp, height = 120.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
 
-                                Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(12.dp))
 
-                                // Thông tin sách
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = book.tenSach,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text = "Tác giả: ${book.tenTacGia ?: "Chưa rõ"}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        text = "NXB: ${book.nxb ?: "Chưa rõ"}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    // Trạng thái
-                                    val available = (book.tongSoLuong - book.soLuongMuon - book.soLuongXoa) > 0
-                                    Text(
-                                        text = if (available) "Còn sách" else "Hết sách",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (available) Color(0xFF4CAF50) else Color(0xFFF44336),
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = book.tenSach,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = "Tác giả: ${book.tenTacGia ?: "Chưa rõ"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                        Text(
+                                            text = "NXB: ${book.nxb ?: "Chưa rõ"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        val available = (book.tongSoLuong - book.soLuongMuon - book.soLuongXoa) > 0
+                                        Text(
+                                            text = if (available) "Còn sách" else "Hết sách",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (available) Color(0xFF4CAF50) else Color(0xFFF44336),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
                             }
                         }

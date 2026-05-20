@@ -2,6 +2,7 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.network.ApiService
 import com.example.smartlibrary.network.ChangePasswordRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,9 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() {
+class ChangePasswordViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
-    // User Data
     private val _userName = MutableStateFlow("")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
@@ -21,12 +24,10 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
     private val _userAvatar = MutableStateFlow<String?>(null)
     val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
-    // Form Fields
     val currentPassword = MutableStateFlow("")
     val newPassword = MutableStateFlow("")
     val confirmPassword = MutableStateFlow("")
 
-    // Password Visibility
     private val _showCurrentPassword = MutableStateFlow(false)
     val showCurrentPassword: StateFlow<Boolean> = _showCurrentPassword.asStateFlow()
 
@@ -36,7 +37,6 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
     private val _showConfirmPassword = MutableStateFlow(false)
     val showConfirmPassword: StateFlow<Boolean> = _showConfirmPassword.asStateFlow()
 
-    // UI State
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -46,39 +46,31 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
     private val _isSuccess = MutableStateFlow(false)
     val isSuccess: StateFlow<Boolean> = _isSuccess.asStateFlow()
 
-    // Validation Errors
     private val _errors = MutableStateFlow<Map<String, String>>(emptyMap())
     val errors: StateFlow<Map<String, String>> = _errors.asStateFlow()
+
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
 
     init {
         loadUserData()
     }
 
     private fun loadUserData() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val userId = "user123" // Giả sử ID người dùng
-                val response = apiService.getUserProfile(userId)
-                if (response.status == "success" || response.data != null) {
-                    _userName.value = response.data.fullname ?: "Người dùng"
-                    _userEmail.value = response.data.email ?: ""
-                    _userAvatar.value = response.data.avatar_url
-                } else {
-                    loadMockUser()
-                }
+                val user = apiService.getUserProfile(userId) // Nhận User trực tiếp
+                _userName.value = user.fullname ?: "Người dùng"
+                _userEmail.value = user.email ?: ""
+                _userAvatar.value = user.avatar_url
             } catch (e: Exception) {
-                loadMockUser()
+                _message.value = "Lỗi tải thông tin: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
         }
-    }
-
-    private fun loadMockUser() {
-        _userName.value = "Nguyễn Văn A"
-        _userEmail.value = "vana@example.com"
-        _userAvatar.value = null
     }
 
     fun togglePasswordVisibility(field: String) {
@@ -91,22 +83,18 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
 
     private fun validateForm(): Boolean {
         val errorMap = mutableMapOf<String, String>()
-        
+
         if (currentPassword.value.isBlank()) {
             errorMap["current"] = "Vui lòng nhập mật khẩu hiện tại"
         }
-        
+
         if (newPassword.value.isBlank()) {
             errorMap["new"] = "Vui lòng nhập mật khẩu mới"
         } else if (newPassword.value.length < 6) {
             errorMap["new"] = "Mật khẩu mới phải có ít nhất 6 ký tự"
-        } else if (newPassword.value == currentPassword.value) {
-            errorMap["new"] = "Mật khẩu mới không được trùng mật khẩu cũ"
         }
-        
-        if (confirmPassword.value.isBlank()) {
-            errorMap["confirm"] = "Vui lòng xác nhận mật khẩu mới"
-        } else if (confirmPassword.value != newPassword.value) {
+
+        if (confirmPassword.value != newPassword.value) {
             errorMap["confirm"] = "Xác nhận mật khẩu không khớp"
         }
 
@@ -115,12 +103,11 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
     }
 
     fun changePassword() {
-        if (!validateForm()) return
+        if (!validateForm() || userId.isEmpty()) return
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val userId = "user123"
                 val request = ChangePasswordRequest(
                     id = userId,
                     oldPassword = currentPassword.value,
@@ -132,10 +119,10 @@ class ChangePasswordViewModel(private val apiService: ApiService) : ViewModel() 
                     _isSuccess.value = true
                     resetForm()
                 } else {
-                    _message.value = "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại."
+                    _message.value = "Mật khẩu hiện tại không chính xác"
                 }
             } catch (e: Exception) {
-                _message.value = "Lỗi kết nối: ${e.message}"
+                _message.value = "Lỗi kết nối: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }

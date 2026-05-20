@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">SmartLibrary</string>
+    <string name="facebook_app_id">1685034505554675</string>
+    <string name="facebook_client_token">4a3b9ba92edfc8a5d8fd1787e2ad4813</string>
+    <string name="fb_login_protocol_scheme">fb1685034505554675</string>
 </resources>

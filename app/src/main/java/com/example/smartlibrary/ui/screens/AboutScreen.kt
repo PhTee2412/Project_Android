@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.smartlibrary.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -41,22 +42,22 @@ fun AboutScreen(navController: androidx.navigation.NavController? = null) {
     // Dữ liệu tính năng
     val features = remember {
         listOf(
-            FeatureItem("Tra cứu sách", "Tìm kiếm nhanh chóng theo tên, tác giả, thể loại.", Icons.Default.Search),
-            FeatureItem("Mượn/Trả", "Quản lý mượn, trả và gia hạn sách dễ dàng.", Icons.Default.Book),
-            FeatureItem("Người dùng", "Quản lý sinh viên, giảng viên và thủ thư.", Icons.Default.People),
+            FeatureItem("Tra cứu sách", "Tìm kiếm nhanh chóng theo tên, tác giả, từ khóa.", Icons.Default.Search),
+            FeatureItem("Mượn/Trả", "Quản lý mượn và trả sách dễ dàng.", Icons.Default.Book),
+            FeatureItem("Người dùng", "Quản lý độc giả và thủ thư.", Icons.Default.People),
             FeatureItem("Thống kê", "Tự động thống kê số lượng sách, lượt mượn.", Icons.Default.BarChart),
             FeatureItem("Chat AI", "Hỗ trợ chat trực tuyến với AI các thắc mắc.", Icons.AutoMirrored.Filled.Chat),
             FeatureItem("Bảo mật", "Dữ liệu an toàn trên máy chủ bảo mật.", Icons.Default.Storage),
-            FeatureItem("Hiện đại", "Giao diện trực quan, đa nền tảng.", Icons.Default.Star),
-            FeatureItem("Thông báo", "Gửi thông báo khi sắp đến hạn trả sách.", Icons.Default.Notifications)
+            FeatureItem("Hiện đại", "Giao diện trực quan, dễ sử dụng.", Icons.Default.Star),
+            FeatureItem("Thông báo", "Gửi thông báo khi sắp đến hạn trả sách,...", Icons.Default.Notifications)
         )
     }
 
-    // Dữ liệu thành viên
+    // Dữ liệu thành viên sử dụng resource ID local
     val teamMembers = remember {
         listOf(
-            TeamMember("Lê Thị Phương Thảo", "23521468", "https://i.pinimg.com/736x/bc/fd/9a/bcfd9a2d158eb0f2c36bf5b1126c0bfc.jpg"),
-            TeamMember("Nguyễn Gia Bảo", "23520120", "https://i.pinimg.com/736x/bc/fd/9a/bcfd9a2d158eb0f2c36bf5b1126c0bfc.jpg")
+            TeamMember("Lê Thị Phương Thảo", "23521468", R.drawable.thao),
+            TeamMember("Nguyễn Gia Bảo", "23520120", R.drawable.bao)
         )
     }
 
@@ -64,8 +65,10 @@ fun AboutScreen(navController: androidx.navigation.NavController? = null) {
     val introImages = remember {
         listOf(
             "https://i.pinimg.com/736x/bc/fd/9a/bcfd9a2d158eb0f2c36bf5b1126c0bfc.jpg",
-            "https://i.pinimg.com/736x/bc/fd/9a/bcfd9a2d158eb0f2c36bf5b1126c0bfc.jpg",
-            "https://i.pinimg.com/736x/bc/fd/9a/bcfd9a2d158eb0f2c36bf5b1126c0bfc.jpg"
+            "https://mintbook.com/blog/wp-content/uploads/Must-Have-Digital-Library-Tools-1.jpeg.webp",
+            "https://static.vecteezy.com/system/resources/thumbnails/027/196/314/small/concept-of-electronic-library-online-bookstore-ebook-online-library-people-reading-books-with-digital-library-service-users-learn-with-book-archives-illustration-for-web-design-vector.jpg",
+            "https://img.freepik.com/free-vector/online-library-app-reading-banner_33099-1733.jpg",
+            "https://img.freepik.com/free-vector/audio-books-isometric-composition-with-character-female-librarian-with-book-shelves-inside-smartphone-screen-frame-vector-illustration_1284-80591.jpg"
         )
     }
     val introPagerState = rememberPagerState(pageCount = { introImages.size })
@@ -295,7 +298,7 @@ fun AboutScreen(navController: androidx.navigation.NavController? = null) {
                             .border(4.dp, Color(0xFF30C9E8), CircleShape)
                     ) { page ->
                         AsyncImage(
-                            model = teamMembers[page].imageUrl,
+                            model = teamMembers[page].imageRes,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -387,4 +390,4 @@ fun AnimatedSectionTitle(t1: String, t2: String) {
 }
 
 data class FeatureItem(val title: String, val description: String, val icon: ImageVector)
-data class TeamMember(val name: String, val mssv: String, val imageUrl: String)
+data class TeamMember(val name: String, val mssv: String, val imageRes: Int)

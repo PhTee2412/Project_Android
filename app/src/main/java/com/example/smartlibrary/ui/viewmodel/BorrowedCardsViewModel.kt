@@ -2,16 +2,17 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.network.ApiService
 import com.example.smartlibrary.network.BorrowCardResponse
-import com.example.smartlibrary.network.BorrowedBookBrief
 import com.example.smartlibrary.network.BorrowCardDetailResponse
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
+class BorrowedCardsViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _borrowCards = MutableStateFlow<List<BorrowCardResponse>>(emptyList())
     val borrowCards = _borrowCards.asStateFlow()
@@ -19,8 +20,10 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
     private val _selectedTab = MutableStateFlow("Đã yêu cầu")
     val selectedTab = _selectedTab.asStateFlow()
 
-    private val _filteredCards = MutableStateFlow<List<BorrowCardResponse>>(emptyList())
-    val filteredCards = _filteredCards.asStateFlow()
+    // Sử dụng combine để filteredCards luôn tự động cập nhật khi danh sách tổng hoặc Tab thay đổi
+    val filteredCards: StateFlow<List<BorrowCardResponse>> = combine(_borrowCards, _selectedTab) { cards, tab ->
+        cards.filter { it.status == tab }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -31,29 +34,25 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
     private val _cardDetail = MutableStateFlow<BorrowCardDetailResponse?>(null)
     val cardDetail = _cardDetail.asStateFlow()
 
-    // Thêm state để kiểm tra xem đã từng load detail chưa, tránh hiện "Không tìm thấy" lúc mới vào
     private val _isDetailLoaded = MutableStateFlow(false)
     val isDetailLoaded = _isDetailLoaded.asStateFlow()
+
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
 
     init {
         loadBorrowCards()
     }
 
     fun loadBorrowCards() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val response = apiService.getBorrowCardsByUser("2")
-                if (response.isEmpty()) {
-                    _borrowCards.value = getMockData()
-                } else {
-                    _borrowCards.value = response
-                }
-                filterCards(_selectedTab.value)
+                val response = apiService.getBorrowCardsByUser(userId)
+                _borrowCards.value = response
             } catch (e: Exception) {
-                _message.value = "Lỗi khi tải dữ liệu: ${e.message}"
-                _borrowCards.value = getMockData()
-                filterCards(_selectedTab.value)
+                _message.value = "Lỗi khi tải dữ liệu: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -62,11 +61,6 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
 
     fun onTabSelected(tab: String) {
         _selectedTab.value = tab
-        filterCards(tab)
-    }
-
-    private fun filterCards(tab: String) {
-        _filteredCards.value = _borrowCards.value.filter { it.status == tab }
     }
 
     fun loadCardDetail(cardId: Int) {
@@ -78,21 +72,7 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
                 val response = apiService.getBorrowCardById(cardId.toString())
                 _cardDetail.value = response
             } catch (e: Exception) {
-                _message.value = "Lỗi khi tải chi tiết: ${e.message}"
-                val mockCard = _borrowCards.value.find { it.id == cardId }
-                _cardDetail.value = mockCard?.let {
-                    BorrowCardDetailResponse(
-                        id = it.id,
-                        userId = it.userId,
-                        userName = "Người dùng Mock",
-                        borrowDate = it.borrowDate,
-                        dueDate = it.dueDate,
-                        getBookDate = it.getBookDate,
-                        status = it.status,
-                        totalBooks = it.bookIds?.size ?: 0,
-                        bookIds = it.bookIds
-                    )
-                }
+                _message.value = "Lỗi khi tải chi tiết: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
                 _isDetailLoaded.value = true
@@ -104,12 +84,20 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                apiService.deleteBorrowCard(cardId.toString())
-                _message.value = "Xóa phiếu thành công"
-                loadBorrowCards()
-                onSuccess()
+                val response = apiService.deleteBorrowCard(cardId.toString())
+                if (response.isSuccessful) {
+                    _message.value = "Xóa phiếu thành công"
+                    
+                    // CẬP NHẬT CỤC BỘ NGAY LẬP TỨC: Xóa khỏi danh sách trong bộ nhớ
+                    // Vì ViewModel được dùng chung, nên màn hình danh sách sẽ cập nhật ngay
+                    _borrowCards.value = _borrowCards.value.filter { it.id != cardId }
+                    
+                    onSuccess() // Quay lại màn hình danh sách
+                } else {
+                    _message.value = "Không thể xóa phiếu"
+                }
             } catch (e: Exception) {
-                _message.value = "Xóa phiếu thất bại: ${e.message}"
+                _message.value = "Xóa phiếu thất bại: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -118,33 +106,5 @@ class BorrowedCardsViewModel(private val apiService: ApiService) : ViewModel() {
 
     fun clearMessage() {
         _message.value = null
-    }
-
-    private fun getMockData(): List<BorrowCardResponse> {
-        val books = listOf(
-            BorrowedBookBrief(
-                bookId = 1,
-                name = "Java Nâng Cao 1",
-                author = "Đoàn Văn Ban",
-                image = "https://example.com/java.jpg",
-                category = "Sách Lập Trình",
-                publisher = "NXB Trẻ",
-                borrowCount = 5
-            ),
-            BorrowedBookBrief(
-                bookId = 2,
-                name = "Kotlin for Android",
-                author = "JetBrains",
-                image = "https://example.com/kotlin.jpg",
-                category = "Công nghệ",
-                publisher = "NXB Giáo dục",
-                borrowCount = 10
-            )
-        )
-        return listOf(
-            BorrowCardResponse(14, 2, "2026-05-12", null, "2026-05-15", "Đã yêu cầu", 0, books),
-            BorrowCardResponse(15, 2, "2024-05-10", "2024-05-24", null, "Đang mượn", 0, books),
-            BorrowCardResponse(16, 2, "2024-04-01", "2024-04-15", null, "Hết hạn", 2, books)
-        )
     }
 }

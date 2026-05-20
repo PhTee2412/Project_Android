@@ -4,6 +4,7 @@ import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
+
 interface ApiService {
     @GET("api/book")
     suspend fun getAllBooks(): List<BookResponse>
@@ -42,34 +43,38 @@ interface ApiService {
     @GET("api/category-child/category/{parentId}")
     suspend fun getCategoryChildren(@Path("parentId") parentId: String): List<CategoryChildResponse>
 
+    @GET("api/notification/{userId}")
+    suspend fun getNotifications(@Path("userId") userId: String): List<NotificationItem>
 
+    @PUT("api/notification/mark-as-read/{id}")
+    suspend fun markNotificationAsRead(@Path("id") id: Long): Response<Unit>
+
+    // Settings
+    @GET("api/settings")
+    suspend fun getSettings(): Setting
+
+    // Cart
     @GET("api/cart/{userId}")
     suspend fun getCart(@Path("userId") userId: String): CartResponseWrapper
 
     @POST("api/cart/{userId}/add/books")
     suspend fun addToCart(
         @Path("userId") userId: String,
-        @Body bookIds: List<String>
+        @Body bookIds: List<Long>
     ): Response<Unit>
 
     @HTTP(method = "DELETE", path = "api/cart/{userId}/remove/books", hasBody = true)
     suspend fun removeBooksFromCart(
         @Path("userId") userId: String,
-        @Body bookIds: List<String>
+        @Body bookIds: List<Long>
     ): Response<Unit>
 
-    @GET("api/notification/{userId}")
-    suspend fun getNotifications(@Path("userId") userId: String): List<NotificationItem>
-
-    @PUT("api/notification/mark-as-read/{id}")
-    suspend fun markNotificationAsRead(@Path("id") id: String): Response<Unit>
-
-    @POST("api/chat")
+    @POST("api/chat/message")
     suspend fun sendChatMessage(@Body request: ChatRequest): ChatResponse
 
     // --- Profile API ---
     @GET("api/user/{id}")
-    suspend fun getUserProfile(@Path("id") id: String): UserProfileResponse
+    suspend fun getUserProfile(@Path("id") id: String): User
 
     @PUT("api/user/{id}")
     suspend fun updateUserProfile(@Path("id") id: String, @Body updates: Map<String, String?>): Response<UserProfileResponse>
@@ -105,10 +110,28 @@ interface ApiService {
 
     @POST("api/fine/payment/confirm")
     suspend fun confirmFinePayment(@Body body: ConfirmPaymentRequest): Response<Unit>
+
+    // --- Auth API ---
+    @POST("api/login")
+    suspend fun login(@Body body: LoginRequest): LoginResponse
+
+    @POST("api/register")
+    suspend fun register(@Body body: RegisterRequest): RegisterResponse
+
+    @POST("api/register/verify-otp")
+    suspend fun verifyOtp(@Body body: VerifyOtpRequest): VerifyOtpResponse
+
+    @POST("api/auth/google")
+    suspend fun loginWithGoogle(@Body body: SocialLoginRequest): LoginResponse
+
+    @POST("api/auth/facebook")
+    suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
 }
 
+data class SocialLoginRequest(val token: String)
+
 data class BookResponse(
-    val maSach: String,
+    val maSach: Long,
     val tenSach: String,
     val tenTacGia: String?,
     val nxb: String?,
@@ -149,21 +172,38 @@ data class BorrowRequest(
     val bookIds: List<Int>
 )
 
-
-
-data class CartResponseWrapper(
-    val data: List<BookResponse>?
-)
-
-data class CartItem(
-    val bookId: String
-)
-
 data class NotificationItem(
-    val id: String,
+    val id: Long,
     val message: String,
     val timestamp: String,
     val isRead: Boolean
+)
+
+data class Setting(
+    val id: Long? = null,
+    val finePerDay: Int = 0,
+    val waitingToTake: Int = 0,
+    val borrowDay: Int = 0,
+    val startToMail: Int = 0,
+    val maxBorrowedBooks: Int? = null
+)
+
+data class CartResponseWrapper(
+    val message: String? = null,
+    val data: List<CartItemDTO>?
+)
+
+data class CartItemDTO(
+    val bookId: Long,          // Backend trả về bookId (Long)
+    val tenSach: String,
+    val tenTacGia: String?,
+    val nxb: String?,
+    val nam: Int?,
+    val hinhAnh: List<String>?,
+    val tongSoLuong: Int,
+    val soLuongMuon: Int,
+    val soLuongXoa: Int,
+    val trangThai: String?
 )
 
 data class ChatRequest(
@@ -187,7 +227,7 @@ data class UserDataResponse(
     val id: Int?,
     val fullname: String?,
     val email: String?,
-    val username: String? = null, // Added username
+    val username: String? = null,
     val phone: String?,
     val birthdate: String?,
     val joined_date: String?,
@@ -200,12 +240,10 @@ data class AvatarResponse(
     val data: AvatarData
 )
 
-data class AvatarData(
-    val avatar_url: String?
-)
+data class AvatarData(val avatar_url: String?)
 
 data class VerifyOtpRequest(
-    val id: String,
+    val id: String? = null,
     val email: String,
     val otp: String
 )
@@ -259,16 +297,18 @@ data class BorrowCardDetailResponse(
 // --- Fines Data Classes ---
 data class FineResponse(
     val id: Int,
-    val userId: UserBrief? = null,   // LUÔN là object (dựa trên code React)
+    val userId: UserBrief? = null,
     val soTien: Double? = null,
     val noiDung: String? = null,
-    val trangThai: String? = null,   // "CHUA_THANH_TOAN" hoặc "DA_THANH_TOAN"
+    val trangThai: String? = null,
     val ngayThanhToan: String? = null
 )
 
 data class UserBrief(
     val id: Int? = null,
-    val name: String? = null
+    val name: String? = null,
+    val email: String? = null,
+    val role: String? = null
 )
 
 data class FineDetailResponse(
@@ -278,7 +318,7 @@ data class FineDetailResponse(
     val noiDung: String? = null,
     val trangThai: String? = null,
     val ngayThanhToan: String? = null,
-    val cardId: BorrowCardInFine? = null,  // thông tin phiếu mượn (nếu có)
+    val cardId: BorrowCardInFine? = null,
     val tenND: String? = null
 )
 
@@ -289,3 +329,61 @@ data class BorrowCardInFine(
 
 data class MomoPaymentResponse(val payUrl: String, val status: String?)
 data class ConfirmPaymentRequest(val orderId: String, val amount: String)
+
+// --- Auth Data Classes ---
+data class LoginRequest(
+    val email: String? = null,
+    val phone: String? = null,
+    val password: String
+)
+
+data class LoginResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: LoginData? = null
+)
+
+data class LoginData(
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
+    val user: UserBrief? = null
+)
+
+data class RegisterRequest(
+    val username: String,
+    val email: String? = null,
+    val phone: String? = null,
+    val password: String,
+    val birthdate: String? = null,
+    val gender: String? = null
+)
+
+data class RegisterResponse(
+    val status: String? = null,
+    val message: String? = null
+)
+
+data class VerifyOtpResponse(
+    val status: String? = null,
+    val message: String? = null
+)
+
+data class SettingsResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: SettingsData? = null
+)
+data class User(
+    val id: Long,
+    val username: String?,
+    val email: String?,
+    val fullname: String?,
+    val phone: String?,
+    val role: String?,
+    val gender: String?,
+    val avatar_url: String?,
+    val birthdate: String?,
+    val joined_date: String?
+)
+
+data class SettingsData(val maxBorrowedBooks: Int? = null)

@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +31,7 @@ fun NotificationScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(userId) {
-        viewModel.loadNotifications(userId)
+        viewModel.loadNotifications()
     }
 
     LaunchedEffect(message) {
@@ -110,7 +109,7 @@ fun NotificationCard(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
             } else {
-                Spacer(modifier = Modifier.width(20.dp)) // Equivalent space when no dot
+                Spacer(modifier = Modifier.width(20.dp))
             }
 
             Column(modifier = Modifier.weight(1f)) {
@@ -134,14 +133,29 @@ fun NotificationCard(
 }
 
 fun formatTimestamp(timestamp: String): String {
+    if (timestamp.isBlank()) return ""
     return try {
-        // Handle ISO format like 2023-10-27T10:00:00Z or similar
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
-        val date = inputFormat.parse(timestamp)
-        val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        // Xác định format và múi giờ đầu vào
+        val inputFormat = if (timestamp.contains("T")) {
+            val pattern = if (timestamp.contains(".")) "yyyy-MM-dd'T'HH:mm:ss.SSS" else "yyyy-MM-dd'T'HH:mm:ss"
+            SimpleDateFormat(pattern, Locale.getDefault()).apply {
+                // Nếu kết thúc bằng Z là giờ UTC, ngược lại coi như đã là giờ Việt Nam (Asia/Ho_Chi_Minh)
+                timeZone = if (timestamp.endsWith("Z")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
+            }
+        } else {
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
+                // Mặc định các chuỗi ngày giờ từ Server VN thường đã là giờ VN
+                timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
+            }
+        }
+
+        val date = inputFormat.parse(timestamp.removeSuffix("Z"))
+        
+        // Luôn hiển thị theo định dạng Việt Nam: HH:mm - dd/MM/yyyy
+        val outputFormat = SimpleDateFormat("HH:mm - dd/MM/yyyy", Locale.getDefault())
+        outputFormat.timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
         outputFormat.format(date ?: Date())
     } catch (e: Exception) {
-        timestamp // Fallback if parsing fails
+        timestamp
     }
 }

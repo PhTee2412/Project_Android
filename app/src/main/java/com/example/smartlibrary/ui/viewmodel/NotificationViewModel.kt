@@ -2,6 +2,7 @@ package com.example.smartlibrary.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.network.ApiService
 import com.example.smartlibrary.network.NotificationItem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 
 class NotificationViewModel(
     private val apiService: ApiService,
+    private val sessionManager: SessionManager,
     private val onUnreadCountChanged: (Int) -> Unit
 ) : ViewModel() {
 
@@ -26,65 +28,53 @@ class NotificationViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
-    fun loadNotifications(userId: String) {
+    private val userId: String
+        get() = sessionManager.getUserId() ?: ""
+
+    init {
+        loadNotifications()
+    }
+
+    fun loadNotifications() {
+        if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Mock data if needed, but the requirement asks for API call
                 val result = apiService.getNotifications(userId)
-                _notifications.value = result.sortedByDescending { it.timestamp }
-                
-                val unread = result.count { !it.isRead }
+                val localRead = sessionManager.getReadNotifications()
+                val merged = result.map { item ->
+                    if (localRead.contains(item.id.toString())) item.copy(isRead = true) else item
+                }.sortedByDescending { it.timestamp }
+                _notifications.value = merged
+                val unread = merged.count { !it.isRead }
                 _unreadCount.value = unread
                 onUnreadCountChanged(unread)
             } catch (e: Exception) {
-                _message.value = "Lỗi khi tải thông báo: ${e.localizedMessage}"
-                // fallback to mock data for demonstration
-                val mockData = getMockNotifications()
-                _notifications.value = mockData
-                val unread = mockData.count { !it.isRead }
-                _unreadCount.value = unread
-                onUnreadCountChanged(unread)
+                _message.value = "Không thể tải thông báo: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun markAsRead(notificationId: String) {
+    fun markAsRead(notificationId: Long) {
+        sessionManager.addReadNotification(notificationId.toString())
+        val currentList = _notifications.value.map {
+            if (it.id == notificationId) it.copy(isRead = true) else it
+        }
+        _notifications.value = currentList
+        val unread = currentList.count { !it.isRead }
+        _unreadCount.value = unread
+        onUnreadCountChanged(unread)
+
         viewModelScope.launch {
             try {
-                val response = apiService.markNotificationAsRead(notificationId)
-                if (response.isSuccessful) {
-                    // Update locally for better UX
-                    val currentList = _notifications.value.map {
-                        if (it.id == notificationId) it.copy(isRead = true) else it
-                    }
-                    _notifications.value = currentList
-                    
-                    val unread = currentList.count { !it.isRead }
-                    _unreadCount.value = unread
-                    onUnreadCountChanged(unread)
-                    
-                    _message.value = "Đã đánh dấu đã đọc"
-                } else {
-                    _message.value = "Không thể cập nhật trạng thái"
-                }
-            } catch (e: Exception) {
-                _message.value = "Lỗi: ${e.localizedMessage}"
-            }
+                apiService.markNotificationAsRead(notificationId)
+            } catch (_: Exception) { }
         }
     }
 
     fun clearMessage() {
         _message.value = null
-    }
-
-    private fun getMockNotifications(): List<NotificationItem> {
-        return listOf(
-            NotificationItem("1", "Chào mừng bạn đến với SmartLibrary! 📚", "2023-10-27T10:00:00Z", false),
-            NotificationItem("2", "Sách <b>Đắc Nhân Tâm</b> đã được trả thành công.", "2023-10-26T15:30:00Z", true),
-            NotificationItem("3", "Bạn có yêu cầu mượn sách mới đang chờ duyệt.", "2023-10-25T09:15:00Z", false)
-        )
     }
 }

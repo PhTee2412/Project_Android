@@ -9,25 +9,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.smartlibrary.network.BorrowCardResponse
 import com.example.smartlibrary.ui.viewmodel.BorrowedCardsViewModel
 import com.example.smartlibrary.util.formatDate
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +38,20 @@ fun BorrowedCardsScreen(
     val filteredCards by viewModel.filteredCards.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // TỰ ĐỘNG RELOAD: Khi quay lại màn hình này (ON_RESUME)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadBorrowCards()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,9 +61,7 @@ fun BorrowedCardsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         containerColor = Color(0xFFE6EAF1)
@@ -92,7 +102,7 @@ fun BorrowedCardsScreen(
                 )
             }
 
-            if (isLoading) {
+            if (isLoading && filteredCards.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFF062D76))
                 }
@@ -109,7 +119,7 @@ fun BorrowedCardsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(filteredCards) { card ->
+                    items(filteredCards, key = { it.id }) { card ->
                         BorrowCardItem(card = card, selectedTab = selectedTab, onCardClick = onCardClick)
                     }
                 }
@@ -129,8 +139,8 @@ fun TabButton(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = if (isSelected) Color(0xFF9CE5F4) else Color(0xFFD1D5DB), // Đổi màu tab được chọn
-        contentColor = if (isSelected) Color(0xFF062D76) else Color(0xFF131313), // Đổi màu nội dung để tương phản
+        color = if (isSelected) Color(0xFF9CE5F4) else Color(0xFFD1D5DB),
+        contentColor = if (isSelected) Color(0xFF062D76) else Color(0xFF131313),
         modifier = modifier.height(48.dp)
     ) {
         Row(
@@ -208,8 +218,8 @@ fun BorrowCardItem(
             Button(
                 onClick = { onCardClick(card.id) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF9CE5F4), // Đổi màu nút "Xem chi tiết"
-                    contentColor = Color(0xFF062D76) // Màu nội dung tương ứng
+                    containerColor = Color(0xFF9CE5F4),
+                    contentColor = Color(0xFF062D76)
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.height(36.dp)
