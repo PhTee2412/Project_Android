@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "http://localhost:8080/" // IP mặc định cho emulator kết nối localhost
+    private const val BASE_URL = "http://localhost:8080/"
     private var sessionManager: SessionManager? = null
 
     fun initialize(context: Context) {
