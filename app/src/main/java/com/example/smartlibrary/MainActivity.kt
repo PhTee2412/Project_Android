@@ -37,6 +37,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize RetrofitClient with context for Authorization header
+        RetrofitClient.initialize(this)
+
         FacebookSdk.fullyInitialize()
         callbackManager = CallbackManager.Factory.create()
 
@@ -119,6 +122,13 @@ fun MainApp(
     }
 
     val newsViewModel: NewsViewModel = viewModel()
+
+    // Cập nhật số lượng thông báo và giỏ hàng khi chuyển trang
+    LaunchedEffect(currentRoute, isLoggedIn) {
+        if (isLoggedIn) {
+            viewModel.refreshCounts()
+        }
+    }
 
     val showBars = currentRoute != "search" &&
             currentRoute != "chat" &&

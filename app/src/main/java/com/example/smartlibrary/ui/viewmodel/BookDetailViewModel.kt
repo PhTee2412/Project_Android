@@ -78,6 +78,7 @@ class BookDetailViewModel(
             return
         }
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val bookIdInt = bookId.toIntOrNull()
                 if (bookIdInt == null) {
@@ -89,10 +90,17 @@ class BookDetailViewModel(
                     _message.value = "Phiếu mượn đã được tạo thành công!"
                     onSuccess()
                 } else {
-                    _message.value = "Có lỗi xảy ra khi tạo phiếu mượn"
+                    val errorMsg = response.errorBody()?.string() ?: ""
+                    _message.value = if (errorMsg.contains("limit", true) || errorMsg.contains("tối đa", true)) {
+                        "Bạn đã đạt giới hạn số lượng sách mượn tối đa!"
+                    } else {
+                        "Có lỗi xảy ra khi tạo phiếu mượn. Vui lòng kiểm tra lại."
+                    }
                 }
             } catch (e: Exception) {
-                _message.value = "Không thể mượn sách. Vui lòng thử lại."
+                _message.value = "Không thể kết nối máy chủ để mượn sách."
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -103,13 +111,13 @@ class BookDetailViewModel(
             return
         }
 
-        // Kiểm tra nhanh local state trước khi gọi API
         if (_isAddedToCart.value) {
-            _message.value = "Sách đã tồn tại trong giỏ"
+            _message.value = "Sách này đã có trong giỏ hàng của bạn rồi nhé!"
             return
         }
 
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val bookIdLong = bookId.toLongOrNull()
                 if (bookIdLong == null) {
@@ -118,27 +126,24 @@ class BookDetailViewModel(
                 }
                 val response = apiService.addToCart(userId, listOf(bookIdLong))
                 if (response.isSuccessful) {
-                    _message.value = "Đã thêm sách vào giỏ!"
+                    _message.value = "Đã thêm sách vào giỏ thành công! 📚"
                     _isAddedToCart.value = true
                 } else {
                     val errorBody = response.errorBody()?.string() ?: ""
-                    val errorMessage = if (errorBody.contains("already", ignoreCase = true) ||
-                                          errorBody.contains("trùng", ignoreCase = true) ||
-                                          errorBody.contains("already_in_cart", ignoreCase = true)) {
-                        "Sách đã tồn tại trong giỏ"
+                    if (response.code() == 400 || response.code() == 409 || 
+                        errorBody.contains("already", true) || 
+                        errorBody.contains("exists", true) || 
+                        errorBody.contains("trùng", true)) {
+                        _message.value = "Sách này đã có trong giỏ hàng của bạn rồi nhé!"
+                        _isAddedToCart.value = true
                     } else {
-                        "Có lỗi xảy ra khi thêm sách vào giỏ."
+                        _message.value = "Không thể thêm vào giỏ: ${response.message()}"
                     }
-                    _message.value = errorMessage
                 }
             } catch (e: Exception) {
-                val errorMsg = e.message ?: ""
-                _message.value = if (errorMsg.contains("already", ignoreCase = true) ||
-                                    errorMsg.contains("trùng", ignoreCase = true)) {
-                    "Sách đã tồn tại trong giỏ"
-                } else {
-                    "Lỗi kết nối: $errorMsg"
-                }
+                _message.value = "Lỗi kết nối máy chủ khi thêm vào giỏ hàng."
+            } finally {
+                _isLoading.value = false
             }
         }
     }

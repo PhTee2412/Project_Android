@@ -100,7 +100,6 @@ fun BookDetailScreen(
                                     .background(Color(0xFFF0F7FF))
                                     .padding(16.dp)
                             ) {
-                                // CHỈNH SỬA TẠI ĐÂY: Đồng bộ với Backend TrangThai.CON_SAN
                                 val isAvailable = details.trangThai == "CON_SAN"
 
                                 Text(
@@ -162,7 +161,7 @@ fun BookDetailScreen(
                                             }
                                         },
                                         modifier = Modifier.weight(1f).height(48.dp),
-                                        enabled = isAvailable, // Vô hiệu hóa nút nếu không sẵn
+                                        enabled = isAvailable,
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF30C9E8),
                                             disabledContainerColor = Color.LightGray
@@ -180,7 +179,8 @@ fun BookDetailScreen(
                                                 onLoginRequired()
                                             }
                                         },
-                                        enabled = isAvailable, // Vô hiệu hóa nút nếu không sẵn
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        enabled = isAvailable,
                                         shape = RoundedCornerShape(24.dp),
                                         border = androidx.compose.foundation.BorderStroke(
                                             1.dp,

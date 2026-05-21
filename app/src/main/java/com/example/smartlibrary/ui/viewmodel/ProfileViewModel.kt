@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 class ProfileViewModel(
@@ -53,7 +54,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val user = apiService.getUserProfile(userId)   // Nhận User
+                val user = apiService.getUserProfile(userId)
                 _userInfo.value = UserInfo(
                     fullName = user.fullname ?: "",
                     email = user.email ?: "",
@@ -64,7 +65,7 @@ class ProfileViewModel(
                     studentId = user.id.toString()
                 )
             } catch (e: Exception) {
-                _message.value = "Không thể tải thông tin người dùng: ${e.localizedMessage}"
+                _message.value = "Lỗi tải dữ liệu: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -77,6 +78,7 @@ class ProfileViewModel(
             _isOtpSent.value = false
             _otp.value = ""
             _message.value = null
+            _avatarFile.value = null
         }
     }
 
@@ -88,6 +90,10 @@ class ProfileViewModel(
         _otp.value = newOtp
     }
 
+    fun setAvatarFile(file: File?) {
+        _avatarFile.value = file
+    }
+
     fun dismissOtp() {
         _isOtpSent.value = false
         _otp.value = ""
@@ -97,11 +103,6 @@ class ProfileViewModel(
         val currentInfo = _userInfo.value ?: return
         if (userId.isEmpty()) return
         
-        if (currentInfo.fullName.isBlank()) {
-            _message.value = "Họ và tên không được để trống"
-            return
-        }
-
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -118,7 +119,7 @@ class ProfileViewModel(
                         _isOtpSent.value = true
                         _message.value = "Vui lòng nhập OTP được gửi tới email mới"
                     } else {
-                        _message.value = "Cập nhật thông tin thành công"
+                        _message.value = "Cập nhật thành công"
                         _isEditing.value = false
                         loadUserProfile()
                     }
@@ -133,26 +134,45 @@ class ProfileViewModel(
         }
     }
 
-    fun uploadAvatar(file: File) {
-        if (userId.isEmpty()) return
-        _avatarFile.value = file
+    fun uploadAvatar() {
+        val file = _avatarFile.value
+        if (file == null || userId.isEmpty()) {
+            _message.value = "Vui lòng chọn ảnh trước"
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-                val body = MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("id", userId)
-                    .addFormDataPart("avatar", file.name, requestFile)
-                    .build()
+                val mediaType = when (file.extension.lowercase()) {
+                    "png" -> "image/png"
+                    "jpg", "jpeg" -> "image/jpeg"
+                    "gif" -> "image/gif"
+                    else -> "image/*"
+                }.toMediaTypeOrNull()
 
-                val response = apiService.uploadAvatar(body)
+                val requestFile = file.asRequestBody(mediaType)
+                // Phải khớp với @RequestParam("file") ở Backend
+                val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                
+                // Gửi ID dưới dạng RequestBody plain text
+                val idPart = userId.toRequestBody("text/plain".toMediaTypeOrNull())
+
+                val response = apiService.uploadAvatar(idPart, filePart)
+
                 if (response.isSuccessful) {
-                    _userInfo.value = _userInfo.value?.copy(avatarUrl = response.body()?.data?.avatar_url)
-                    _message.value = "Upload ảnh đại diện thành công"
-                    _avatarFile.value = null
+                    val responseBody = response.body()
+                    if (responseBody?.data?.avatar_url != null) {
+                        _userInfo.value = _userInfo.value?.copy(avatarUrl = responseBody.data.avatar_url)
+                        _message.value = responseBody.message ?: "Upload ảnh thành công"
+                        _avatarFile.value = null
+                    } else {
+                        _message.value = "Upload thất bại: Server không trả về URL ảnh"
+                    }
                 } else {
-                    _message.value = "Upload thất bại"
+                    // Hiển thị lỗi chi tiết từ server để dễ debug
+                    val errorJson = response.errorBody()?.string() ?: ""
+                    _message.value = "Upload thất bại (${response.code()}): $errorJson"
                 }
             } catch (e: Exception) {
                 _message.value = "Lỗi upload: ${e.localizedMessage}"
@@ -163,11 +183,7 @@ class ProfileViewModel(
     }
 
     fun verifyOtp() {
-        if (_otp.value.length != 6 || userId.isEmpty()) {
-            _message.value = "Vui lòng nhập mã OTP hợp lệ"
-            return
-        }
-
+        if (_otp.value.length != 6 || userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {

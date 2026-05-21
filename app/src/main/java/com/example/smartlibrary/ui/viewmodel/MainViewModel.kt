@@ -54,10 +54,7 @@ class MainViewModel(
     init {
         loadHomeData()
         startSidebarRotation()
-        if (sessionManager.isLoggedIn()) {
-            loadCartCount()
-            loadNotificationCount()
-        }
+        refreshCounts()
     }
 
     fun loadHomeData() {
@@ -125,6 +122,13 @@ class MainViewModel(
         }
     }
 
+    fun refreshCounts() {
+        if (sessionManager.isLoggedIn()) {
+            loadCartCount()
+            loadNotificationCount()
+        }
+    }
+
     private fun loadCartCount() {
         val userId = sessionManager.getUserId() ?: return
         viewModelScope.launch {
@@ -132,8 +136,7 @@ class MainViewModel(
                 val response = apiService.getCart(userId)
                 val count = response.data?.size ?: 0
                 _cartCount.value = count
-            } catch (e: Exception) {
-            }
+            } catch (_: Exception) { }
         }
     }
 
@@ -142,10 +145,14 @@ class MainViewModel(
         viewModelScope.launch {
             try {
                 val notifications = apiService.getNotifications(userId)
-                val unreadCount = notifications.count { !it.isRead }
+                val localRead = sessionManager.getReadNotifications()
+                // Đồng bộ logic đếm chưa đọc với NotificationViewModel: 
+                // Coi là đã đọc nếu Server bảo đã đọc HOẶC Local bảo đã đọc
+                val unreadCount = notifications.count { item ->
+                    !item.isRead && !localRead.contains(item.id.toString())
+                }
                 _unreadNotificationCount.value = unreadCount
-            } catch (e: Exception) {
-            }
+            } catch (_: Exception) { }
         }
     }
 
@@ -159,7 +166,10 @@ class MainViewModel(
 
     fun setLoggedIn(value: Boolean) {
         _isLoggedIn.value = value
-        if (value) loadHomeData()
+        if (value) {
+            loadHomeData()
+            refreshCounts()
+        }
     }
 
     fun setChatBotVisibility(visible: Boolean) {
@@ -181,7 +191,6 @@ class MainViewModel(
         publisher = nxb,
         year = nam,
         imageSrc = hinhAnh?.firstOrNull()?.trim() ?: "",
-        // ĐỒNG BỘ TUYỆT ĐỐI: Tin tưởng hoàn toàn vào trangThai từ Backend
         available = trangThai == "CON_SAN",
         borrowCount = if (soLuongMuon >= 0) soLuongMuon else 0
     )

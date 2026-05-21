@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -47,6 +48,7 @@ fun ProfileScreen(
     val message by viewModel.message.collectAsState()
     val isOtpSent by viewModel.isOtpSent.collectAsState()
     val otp by viewModel.otp.collectAsState()
+    val avatarFile by viewModel.avatarFile.collectAsState()
     
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -56,7 +58,22 @@ fun ProfileScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            viewModel.uploadAvatar(File(it.path ?: "avatar.jpg"))
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    val cacheDir = context.cacheDir
+                    val tempFile = File(cacheDir, "avatar_${System.currentTimeMillis()}.jpg")
+                    inputStream.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    // Chỉ set file vào ViewModel, chưa upload (Giống Web logic)
+                    viewModel.setAvatarFile(tempFile)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -134,7 +151,7 @@ fun ProfileScreen(
                 modifier = Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
-                    .background(Color(0xFFF0F4F8)) // Xanh nhạt
+                    .background(Color(0xFFF0F4F8))
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -272,23 +289,56 @@ fun ProfileScreen(
 
                         InfoItem("Ngày Tham Gia", formatDate(userInfo?.joinDate, "Chưa cập nhật"), false) {}
 
-                        // Upload Avatar Section
+                        // Upload Avatar Section (Đồng bộ logic Web)
                         if (isEditing) {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                             Text("Upload ảnh đại diện", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            
                             Row(
-                                modifier = Modifier.padding(top = 8.dp),
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                // Nút Choose File
                                 Button(
                                     onClick = { launcher.launch("image/*") },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF90CAF9)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
-                                    Text("Choose File")
+                                    Text("Choose File", color = Color.Black, fontSize = 12.sp)
                                 }
+                                
                                 Spacer(modifier = Modifier.width(8.dp))
-                                if (isLoading) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                
+                                // Hiển thị tên file
+                                Text(
+                                    text = avatarFile?.name ?: "",
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 12.sp,
+                                    color = Color.Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // Nút Upload (Chỉ hiện khi đã chọn file)
+                                if (avatarFile != null) {
+                                    Button(
+                                        onClick = { viewModel.uploadAvatar() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        enabled = !isLoading
+                                    ) {
+                                        if (isLoading) {
+                                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                                        } else {
+                                            Text("Upload", fontSize = 12.sp)
+                                        }
+                                    }
                                 }
                             }
                         }

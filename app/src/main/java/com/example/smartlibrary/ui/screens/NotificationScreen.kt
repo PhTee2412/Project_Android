@@ -41,42 +41,40 @@ fun NotificationScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            if (isLoading && notifications.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (notifications.isEmpty()) {
-                Text(
-                    text = "Bạn không có thông báo nào.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(notifications, key = { it.id }) { item ->
-                        NotificationCard(
-                            item = item,
-                            onClick = {
-                                if (!item.isRead) {
-                                    viewModel.markAsRead(item.id)
-                                }
+    // Sử dụng Box thay cho Scaffold để tránh lỗi padding lồng nhau
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isLoading && notifications.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else if (notifications.isEmpty()) {
+            Text(
+                text = "Bạn không có thông báo nào.",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(notifications, key = { it.id }) { item ->
+                    NotificationCard(
+                        item = item,
+                        onClick = {
+                            if (!item.isRead) {
+                                viewModel.markAsRead(item.id)
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+        )
     }
 }
 
@@ -135,23 +133,18 @@ fun NotificationCard(
 fun formatTimestamp(timestamp: String): String {
     if (timestamp.isBlank()) return ""
     return try {
-        // Xác định format và múi giờ đầu vào
         val inputFormat = if (timestamp.contains("T")) {
             val pattern = if (timestamp.contains(".")) "yyyy-MM-dd'T'HH:mm:ss.SSS" else "yyyy-MM-dd'T'HH:mm:ss"
             SimpleDateFormat(pattern, Locale.getDefault()).apply {
-                // Nếu kết thúc bằng Z là giờ UTC, ngược lại coi như đã là giờ Việt Nam (Asia/Ho_Chi_Minh)
                 timeZone = if (timestamp.endsWith("Z")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
             }
         } else {
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
-                // Mặc định các chuỗi ngày giờ từ Server VN thường đã là giờ VN
                 timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
             }
         }
 
         val date = inputFormat.parse(timestamp.removeSuffix("Z"))
-        
-        // Luôn hiển thị theo định dạng Việt Nam: HH:mm - dd/MM/yyyy
         val outputFormat = SimpleDateFormat("HH:mm - dd/MM/yyyy", Locale.getDefault())
         outputFormat.timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
         outputFormat.format(date ?: Date())

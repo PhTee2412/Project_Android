@@ -1,5 +1,6 @@
 package com.example.smartlibrary.network
 
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -79,8 +80,12 @@ interface ApiService {
     @PUT("api/user/{id}")
     suspend fun updateUserProfile(@Path("id") id: String, @Body updates: Map<String, String?>): Response<UserProfileResponse>
 
+    @Multipart
     @POST("api/user/upload-avatar")
-    suspend fun uploadAvatar(@Body body: RequestBody): Response<AvatarResponse>
+    suspend fun uploadAvatar(
+        @Part("id") id: RequestBody,
+        @Part file: MultipartBody.Part
+    ): Response<AvatarResponse>
 
     @POST("api/user/verify-email-update")
     suspend fun verifyEmailUpdate(@Body body: VerifyOtpRequest): Response<UserProfileResponse>
@@ -330,7 +335,7 @@ data class BorrowCardInFine(
 data class MomoPaymentResponse(val payUrl: String, val status: String?)
 data class ConfirmPaymentRequest(val orderId: String, val amount: String)
 
-// --- Auth Data Classes ---
+// --- Auth API ---
 data class LoginRequest(
     val email: String? = null,
     val phone: String? = null,
