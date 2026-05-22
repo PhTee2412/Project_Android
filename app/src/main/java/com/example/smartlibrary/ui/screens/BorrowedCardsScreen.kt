@@ -38,7 +38,6 @@ fun BorrowedCardsScreen(
     val filteredCards by viewModel.filteredCards.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // TỰ ĐỘNG RELOAD: Khi quay lại màn hình này (ON_RESUME)
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -82,22 +81,22 @@ fun BorrowedCardsScreen(
                 TabButton(
                     text = "Đã yêu cầu",
                     icon = Icons.Default.ListAlt,
-                    isSelected = selectedTab == "Đã yêu cầu",
-                    onClick = { viewModel.onTabSelected("Đã yêu cầu") },
+                    isSelected = selectedTab == "DA_YEU_CAU",
+                    onClick = { viewModel.onTabSelected("DA_YEU_CAU") },
                     modifier = Modifier.weight(1f)
                 )
                 TabButton(
                     text = "Đang mượn",
                     icon = Icons.Default.Book,
-                    isSelected = selectedTab == "Đang mượn",
-                    onClick = { viewModel.onTabSelected("Đang mượn") },
+                    isSelected = selectedTab == "DANG_MUON",
+                    onClick = { viewModel.onTabSelected("DANG_MUON") },
                     modifier = Modifier.weight(1f)
                 )
                 TabButton(
                     text = "Hết hạn",
                     icon = Icons.Default.Timer,
-                    isSelected = selectedTab == "Hết hạn",
-                    onClick = { viewModel.onTabSelected("Hết hạn") },
+                    isSelected = selectedTab == "HET_HAN",
+                    onClick = { viewModel.onTabSelected("HET_HAN") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -184,12 +183,6 @@ fun BorrowCardItem(
                     color = Color.Gray
                 )
                 Text(
-                    text = "User ID: ${card.userId}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray
-                )
-                Text(
                     text = "Ngày mượn: ${formatDate(card.borrowDate)}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -197,13 +190,13 @@ fun BorrowCardItem(
                 )
 
                 val dateLabel = when (selectedTab) {
-                    "Đang mượn" -> "Ngày trả dự kiến"
-                    "Hết hạn" -> "Ngày trả"
+                    "DANG_MUON" -> "Ngày trả dự kiến"
+                    "HET_HAN" -> "Ngày trả"
                     else -> "Hạn lấy sách"
                 }
                 val dateValue = when (selectedTab) {
-                    "Đang mượn" -> card.dueDate
-                    "Hết hạn" -> card.dueDate
+                    "DANG_MUON" -> card.dueDate
+                    "HET_HAN" -> card.dueDate
                     else -> card.getBookDate
                 }
 

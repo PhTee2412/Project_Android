@@ -158,7 +158,7 @@ fun FineCard(fine: FineResponse, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "User ID: ${fine.userId?.id ?: "N/A"}",
+                    text = "User ID: ${fine.userId ?: "N/A"}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     fontWeight = FontWeight.SemiBold

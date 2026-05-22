@@ -17,10 +17,9 @@ class BorrowedCardsViewModel(
     private val _borrowCards = MutableStateFlow<List<BorrowCardResponse>>(emptyList())
     val borrowCards = _borrowCards.asStateFlow()
 
-    private val _selectedTab = MutableStateFlow("Đã yêu cầu")
+    private val _selectedTab = MutableStateFlow("DA_YEU_CAU") // Sử dụng mã code thay vì tiếng Việt
     val selectedTab = _selectedTab.asStateFlow()
 
-    // Sử dụng combine để filteredCards luôn tự động cập nhật khi danh sách tổng hoặc Tab thay đổi
     val filteredCards: StateFlow<List<BorrowCardResponse>> = combine(_borrowCards, _selectedTab) { cards, tab ->
         cards.filter { it.status == tab }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -87,12 +86,8 @@ class BorrowedCardsViewModel(
                 val response = apiService.deleteBorrowCard(cardId.toString())
                 if (response.isSuccessful) {
                     _message.value = "Xóa phiếu thành công"
-
-                    // CẬP NHẬT CỤC BỘ NGAY LẬP TỨC: Xóa khỏi danh sách trong bộ nhớ
-                    // Vì ViewModel được dùng chung, nên màn hình danh sách sẽ cập nhật ngay
                     _borrowCards.value = _borrowCards.value.filter { it.id != cardId }
-
-                    onSuccess() // Quay lại màn hình danh sách
+                    onSuccess()
                 } else {
                     _message.value = "Không thể xóa phiếu"
                 }

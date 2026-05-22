@@ -302,7 +302,7 @@ data class BorrowCardDetailResponse(
 // --- Fines Data Classes ---
 data class FineResponse(
     val id: Int,
-    val userId: UserBrief? = null,
+    val userId: Int? = null,
     val soTien: Double? = null,
     val noiDung: String? = null,
     val trangThai: String? = null,
@@ -323,7 +323,8 @@ data class FineDetailResponse(
     val noiDung: String? = null,
     val trangThai: String? = null,
     val ngayThanhToan: String? = null,
-    val cardId: BorrowCardInFine? = null,
+    val cardId: String? = null, // Sửa thành String để tránh lỗi GSON Expected BEGIN_OBJECT but was STRING
+    val borrowCard: BorrowCardInFine? = null, // Thêm trường này để hứng Object nếu có
     val tenND: String? = null
 )
 

@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -68,7 +67,7 @@ fun FineDetailScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding(), // Đẩy nút lên trên thanh điều hướng hệ thống
+                        .navigationBarsPadding(),
                     shadowElevation = 16.dp,
                     color = Color.White,
                     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -82,7 +81,7 @@ fun FineDetailScreen(
                             .padding(horizontal = 24.dp, vertical = 16.dp)
                             .height(54.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isPaid) Color(0xFF9CE5F4) else Color(0xFF9CE5F4),
+                            containerColor = Color(0xFF9CE5F4),
                             disabledContainerColor = Color(0xFFB0BEC5)
                         ),
                         shape = RoundedCornerShape(12.dp)
@@ -123,8 +122,9 @@ fun FineDetailScreen(
                     FineInfoCard(currentFine)
                 }
 
-                val showBooks = currentFine.noiDung?.contains("sách", ignoreCase = true) == true
-                if (showBooks && currentFine.cardId?.borrowedBooks != null) {
+                // Sử dụng borrowCard mới sửa
+                val borrowedBooks = currentFine.borrowCard?.borrowedBooks
+                if (borrowedBooks != null && borrowedBooks.isNotEmpty()) {
                     item {
                         Text(
                             text = "Thông tin sách liên quan",
@@ -134,7 +134,7 @@ fun FineDetailScreen(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    items(currentFine.cardId.borrowedBooks) { book ->
+                    items(borrowedBooks) { book ->
                         FineBookCard(book)
                     }
                 }
@@ -167,6 +167,9 @@ fun FineInfoCard(fine: com.example.smartlibrary.network.FineDetailResponse) {
                 InfoRowItem("Mã phiếu phạt", "#${fine.id}")
                 InfoRowItem("Số tiền cần nộp", currencyFormatter.format(fine.soTien ?: 0.0), valueColor = Color(0xFFD32F2F))
                 InfoRowItem("Lý do phạt", fine.noiDung ?: "N/A")
+                if (fine.cardId != null) {
+                    InfoRowItem("Mã phiếu mượn", "#${fine.cardId}")
+                }
                 Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
                 InfoRowItem("Người vi phạm", fine.tenND ?: fine.userId?.name ?: "N/A")
                 if (fine.trangThai == "DA_THANH_TOAN") {
