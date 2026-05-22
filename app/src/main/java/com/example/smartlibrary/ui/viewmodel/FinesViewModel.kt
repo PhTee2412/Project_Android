@@ -86,13 +86,20 @@ class FinesViewModel(
             _isLoading.value = true
             try {
                 val response = apiService.payFineByMomo(fineId)
-                if (response.payUrl.isNotEmpty()) {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(response.payUrl))
-                    context.startActivity(intent)
+                // Defensive checks: ensure response and payUrl exist
+                if (response == null) {
+                    _message.value = "Lỗi thanh toán: server trả về dữ liệu rỗng"
                 } else {
-                    _message.value = "Không nhận được link thanh toán từ Momo"
+                    val payUrl = response.payUrl ?: ""
+                    if (payUrl.isNotBlank()) {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(payUrl))
+                        context.startActivity(intent)
+                    } else {
+                        _message.value = "Không nhận được link thanh toán từ Momo"
+                    }
                 }
             } catch (e: Exception) {
+                // If parsing fails, log raw message and show friendly message
                 _message.value = "Lỗi thanh toán: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false

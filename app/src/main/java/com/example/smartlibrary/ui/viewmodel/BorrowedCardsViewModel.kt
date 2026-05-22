@@ -69,7 +69,12 @@ class BorrowedCardsViewModel(
             _isLoading.value = true
             try {
                 val response = apiService.getBorrowCardById(cardId.toString())
-                _cardDetail.value = response
+                // Defensive: if server returned an empty object or unexpected data, surface helpful message
+                if (response == null) {
+                    _message.value = "Không tìm thấy chi tiết phiếu mượn (server trả về rỗng)"
+                } else {
+                    _cardDetail.value = response
+                }
             } catch (e: Exception) {
                 _message.value = "Lỗi khi tải chi tiết: ${e.localizedMessage}"
             } finally {

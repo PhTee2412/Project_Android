@@ -171,7 +171,7 @@ fun FineInfoCard(fine: com.example.smartlibrary.network.FineDetailResponse) {
                     InfoRowItem("Mã phiếu mượn", "#${fine.cardId}")
                 }
                 Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-                InfoRowItem("Người vi phạm", fine.tenND ?: fine.userId?.name ?: "N/A")
+                InfoRowItem("Người vi phạm", fine.tenND ?: fine.userId?.toString() ?: "N/A")
                 if (fine.trangThai == "DA_THANH_TOAN") {
                     InfoRowItem("Ngày thanh toán", fine.ngayThanhToan ?: "N/A", valueColor = Color(0xFF388E3C))
                 }

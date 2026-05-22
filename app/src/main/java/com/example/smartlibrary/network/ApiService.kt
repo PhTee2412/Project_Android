@@ -94,7 +94,7 @@ interface ApiService {
     suspend fun changePassword(@Body body: ChangePasswordRequest): Response<ChangePasswordResponse>
 
     // --- Borrow Cards API ---
-    @POST("api/borrow-cards/user/{userId}")
+    @GET("api/borrow-cards/user/{userId}")
     suspend fun getBorrowCardsByUser(@Path("userId") userId: String): List<BorrowCardResponse>
 
     @GET("api/borrow-cards/{id}")
@@ -318,13 +318,13 @@ data class UserBrief(
 
 data class FineDetailResponse(
     val id: Int,
-    val userId: UserBrief? = null,
+    val userId: Int? = null, // Đổi từ UserBrief? thành Int? để khớp với giá trị NUMBER từ Backend
     val soTien: Double? = null,
     val noiDung: String? = null,
     val trangThai: String? = null,
     val ngayThanhToan: String? = null,
-    val cardId: String? = null, // Sửa thành String để tránh lỗi GSON Expected BEGIN_OBJECT but was STRING
-    val borrowCard: BorrowCardInFine? = null, // Thêm trường này để hứng Object nếu có
+    val cardId: String? = null,
+    val borrowCard: BorrowCardInFine? = null,
     val tenND: String? = null
 )
 

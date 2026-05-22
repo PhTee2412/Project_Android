@@ -2,6 +2,7 @@ package com.example.smartlibrary.network
 
 import android.content.Context
 import com.example.smartlibrary.data.SessionManager
+import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -48,7 +49,12 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(getOkHttpClient())
-            .addConverterFactory(GsonConverterFactory.create())
+            // Use a lenient Gson parser to tolerate minor malformed JSON from backend
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder().setLenient().create()
+                )
+            )
             .build()
             .create(ApiService::class.java)
     }
