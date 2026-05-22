@@ -87,11 +87,11 @@ class BorrowedCardsViewModel(
                 val response = apiService.deleteBorrowCard(cardId.toString())
                 if (response.isSuccessful) {
                     _message.value = "Xóa phiếu thành công"
-                    
+
                     // CẬP NHẬT CỤC BỘ NGAY LẬP TỨC: Xóa khỏi danh sách trong bộ nhớ
                     // Vì ViewModel được dùng chung, nên màn hình danh sách sẽ cập nhật ngay
                     _borrowCards.value = _borrowCards.value.filter { it.id != cardId }
-                    
+
                     onSuccess() // Quay lại màn hình danh sách
                 } else {
                     _message.value = "Không thể xóa phiếu"

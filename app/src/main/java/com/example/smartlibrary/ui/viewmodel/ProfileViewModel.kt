@@ -102,7 +102,7 @@ class ProfileViewModel(
     fun updateProfile() {
         val currentInfo = _userInfo.value ?: return
         if (userId.isEmpty()) return
-        
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -154,7 +154,7 @@ class ProfileViewModel(
                 val requestFile = file.asRequestBody(mediaType)
                 // Phải khớp với @RequestParam("file") ở Backend
                 val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
-                
+
                 // Gửi ID dưới dạng RequestBody plain text
                 val idPart = userId.toRequestBody("text/plain".toMediaTypeOrNull())
 

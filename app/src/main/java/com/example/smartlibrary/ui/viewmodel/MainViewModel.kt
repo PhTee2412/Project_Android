@@ -69,7 +69,7 @@ class MainViewModel(
                     val keywords = listOf("sách mới", "phổ biến")
                     val suggestions = apiService.getSuggestedBooks(SuggestRequest(userId, keywords))
                     var mappedSuggestions = suggestions.map { it.toBook() }
-                    
+
                     if (mappedSuggestions.size < 6) {
                         val fillers = _allBooks.value.take(6 - mappedSuggestions.size)
                         mappedSuggestions = mappedSuggestions + fillers
@@ -78,7 +78,7 @@ class MainViewModel(
                 } else {
                     _suggestedBooks.value = _allBooks.value.take(6)
                 }
-                
+
                 updateSidebarBooks()
             } catch (e: Exception) {
                 updateSidebarBooks()
