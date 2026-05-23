@@ -157,11 +157,15 @@ interface ApiService {
         @Query("category") category: String? = null,
         @Query("publisher") publisher: String? = null,
         @Query("year") year: String? = null,
+        @Query("status") status: String? = null,
         @Query("sortByBorrowCount") sortByBorrowCount: Boolean = false
     ): List<BookResponse>
 
     @DELETE("api/book/{id}")
     suspend fun deleteBook(@Path("id") id: Long): Response<Unit>
+
+    @GET("api/book/admin/all")
+    suspend fun getAllBooksAdmin(): List<BookResponse>
 
 }
 

@@ -22,7 +22,6 @@ class AdminBooksViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
-    // Bộ lọc
     private val _searchMode = MutableStateFlow("all")
     val searchMode: StateFlow<String> = _searchMode.asStateFlow()
 
@@ -32,29 +31,25 @@ class AdminBooksViewModel(
     private val _statusFilter = MutableStateFlow("all")
     val statusFilter: StateFlow<String> = _statusFilter.asStateFlow()
 
-    // Phân trang
     private val _currentPage = MutableStateFlow(1)
     val currentPage: StateFlow<Int> = _currentPage.asStateFlow()
 
-    private val itemsPerPage = 10
-
-    // Trạng thái xóa
     private val _deleteBook = MutableStateFlow<BookResponse?>(null)
     val deleteBook: StateFlow<BookResponse?> = _deleteBook.asStateFlow()
 
-    init {
-        loadBooks()
-    }
+    private var hasLoaded = false
 
-    fun loadBooks() {
+    fun loadBooksIfNeeded() {
+        if (hasLoaded && _books.value.isNotEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val allBooks = apiService.getAllBooks()
-                android.util.Log.d("AdminBooksVM", "Số sách: ${allBooks.size}")
-                _books.value = allBooks
+                val result = apiService.getAllBooksAdmin()
+                logBooksStatus(result)
+                _books.value = result
+                hasLoaded = true
             } catch (e: Exception) {
-                android.util.Log.e("AdminBooksVM", "Lỗi tải sách", e)
+                _message.value = "Lỗi tải sách: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -64,8 +59,9 @@ class AdminBooksViewModel(
     fun searchBooks() {
         val query = _searchQuery.value.trim()
         val mode = _searchMode.value
-        if (mode == "all" && query.isEmpty()) {
-            loadBooks()
+        if (query.isEmpty() && mode == "all") {
+            // Nếu không có từ khoá, chỉ cần load tất cả nếu chưa có
+            loadBooksIfNeeded()
             return
         }
         viewModelScope.launch {
@@ -77,7 +73,9 @@ class AdminBooksViewModel(
                     author = if (mode == "author") query else null,
                     category = if (mode == "category") query else null,
                     publisher = if (mode == "publisher") query else null,
-                    year = if (mode == "year") query else null
+                    year = if (mode == "year") query else null,
+                    status = null, // tìm kiếm thường không lọc status
+                    sortByBorrowCount = false
                 )
                 _books.value = results
                 _currentPage.value = 1
@@ -89,6 +87,8 @@ class AdminBooksViewModel(
         }
     }
 
+    private fun logBooksStatus(list: List<BookResponse>) { /* giữ nguyên */ }
+
     fun setSearchMode(mode: String) { _searchMode.value = mode }
     fun setSearchQuery(query: String) { _searchQuery.value = query }
     fun setStatusFilter(status: String) {
@@ -97,13 +97,8 @@ class AdminBooksViewModel(
     }
     fun setPage(page: Int) { _currentPage.value = page }
 
-    // Xóa sách
-    fun requestDelete(book: BookResponse) {
-        _deleteBook.value = book
-    }
-    fun cancelDelete() {
-        _deleteBook.value = null
-    }
+    fun requestDelete(book: BookResponse) { _deleteBook.value = book }
+    fun cancelDelete() { _deleteBook.value = null }
     fun confirmDelete() {
         val book = _deleteBook.value ?: return
         viewModelScope.launch {
@@ -112,37 +107,17 @@ class AdminBooksViewModel(
                 val response = apiService.deleteBook(book.maSach)
                 if (response.isSuccessful) {
                     _books.value = _books.value.filter { it.maSach != book.maSach }
-                    _message.value = "Xóa sách thành công"
+                    _message.value = "Xoá sách thành công"
                 } else {
-                    _message.value = "Xóa thất bại"
+                    _message.value = "Xoá thất bại"
                 }
             } catch (e: Exception) {
-                _message.value = "Lỗi xóa sách: ${e.localizedMessage}"
+                _message.value = "Lỗi xoá sách: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
                 _deleteBook.value = null
             }
         }
-    }
-
-    // Lấy sách đã lọc và phân trang
-    fun getPaginatedBooks(): List<BookResponse> {
-        val filtered = when (_statusFilter.value) {
-            "all" -> _books.value
-            else -> _books.value.filter { it.trangThai == _statusFilter.value }
-        }
-        val total = filtered.size
-        val from = (_currentPage.value - 1) * itemsPerPage
-        val to = minOf(from + itemsPerPage, total)
-        return if (from < total) filtered.subList(from, to) else emptyList()
-    }
-
-    fun getTotalPages(): Int {
-        val filtered = when (_statusFilter.value) {
-            "all" -> _books.value
-            else -> _books.value.filter { it.trangThai == _statusFilter.value }
-        }
-        return if (filtered.isEmpty()) 1 else (filtered.size - 1) / itemsPerPage + 1
     }
 
     fun clearMessage() { _message.value = null }

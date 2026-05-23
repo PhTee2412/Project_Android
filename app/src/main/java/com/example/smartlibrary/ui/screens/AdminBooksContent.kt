@@ -65,7 +65,7 @@ fun AdminBooksContent(viewModel: AdminBooksViewModel) {
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
-        viewModel.loadBooks()
+        viewModel.loadBooksIfNeeded()
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
