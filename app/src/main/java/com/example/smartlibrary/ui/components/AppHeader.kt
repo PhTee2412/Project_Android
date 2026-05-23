@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Message
+import androidx.compose.material.icons.filled.AdminPanelSettings // Thêm import
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Notifications
@@ -35,7 +36,8 @@ fun AppHeader(
     onFineClick: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
     onQRCodeClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onAdminLoginClick: () -> Unit = {} // Thêm tham số mới (có giá trị mặc định rỗng)
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -50,6 +52,17 @@ fun AppHeader(
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm")
+            }
+
+
+            if (!isLoggedIn) {
+                IconButton(onClick = onAdminLoginClick) {
+                    Icon(
+                        Icons.Filled.AdminPanelSettings,
+                        contentDescription = "Admin",
+                        tint = Color(0xFF062D76)
+                    )
+                }
             }
 
             if (isLoggedIn) {
@@ -159,7 +172,6 @@ fun AppHeader(
             containerColor = Color.White,
             titleContentColor = Color.Black,
         ),
-        // Sử dụng default windowInsets để Scaffold cha tính toán chính xác
         windowInsets = TopAppBarDefaults.windowInsets
     )
 }

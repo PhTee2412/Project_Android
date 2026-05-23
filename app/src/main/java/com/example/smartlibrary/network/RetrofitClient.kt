@@ -17,7 +17,7 @@ object RetrofitClient {
     private var sessionManager: SessionManager? = null
 
     fun initialize(context: Context) {
-        sessionManager = SessionManager(context)
+        sessionManager = SessionManager(context, "admin_session")
     }
 
     private fun getOkHttpClient(): OkHttpClient {

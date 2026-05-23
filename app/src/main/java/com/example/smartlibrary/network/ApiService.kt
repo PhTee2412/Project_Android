@@ -135,6 +135,16 @@ interface ApiService {
 
     @POST("api/auth/facebook")
     suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
+
+
+    // Endpoint login admin – dùng chung endpoint /api/login nhưng request khác
+    @POST("api/login")
+    suspend fun adminLogin(@Body body: AdminLoginRequest): AdminLoginResponse
+
+    // Endpoint verify OTP admin
+    @POST("api/admin/verify-otp")
+    suspend fun verifyAdminOtp(@Body body: VerifyOtpRequest): AdminLoginResponse
+
 }
 
 // ==================== DATA CLASSES (Giữ nguyên) ====================
@@ -394,3 +404,20 @@ data class User(
 )
 
 data class SettingsData(val maxBorrowedBooks: Int? = null)
+
+// ==================== ADMIN AUTH (riêng biệt) ====================
+
+data class AdminLoginRequest(
+    val email: String? = null,
+    val phone: String? = null,
+    val password: String,
+    val isFEAdmin: Boolean = true
+)
+
+data class AdminLoginResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: LoginData? = null,
+    val email: String? = null   // backend trả về email khi yêu cầu OTP
+)
+
