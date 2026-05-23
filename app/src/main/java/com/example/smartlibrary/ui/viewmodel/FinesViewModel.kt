@@ -38,14 +38,13 @@ class FinesViewModel(
     private val userId: String
         get() = sessionManager.getUserId() ?: ""
 
-    init {
-        loadFines()
-    }
+
 
     fun loadFines() {
         if (userId.isEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
+            _message.value = null   // Xóa lỗi cũ
             try {
                 val response = apiService.getFinesByUser(userId)
                 _fines.value = response
@@ -109,5 +108,11 @@ class FinesViewModel(
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    // Clear fines cache (used on logout or when switching accounts)
+    fun clearFines() {
+        _fines.value = emptyList()
+        _selectedFine.value = null
     }
 }

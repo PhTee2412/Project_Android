@@ -45,9 +45,7 @@ class ProfileViewModel(
     private val userId: String
         get() = sessionManager.getUserId() ?: ""
 
-    init {
-        loadUserProfile()
-    }
+
 
     fun loadUserProfile() {
         if (userId.isEmpty()) return

@@ -65,9 +65,11 @@ fun BookDetailScreen(
                 .padding(padding)
                 .background(Color.White)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (error != null) {
+            if (isLoading && book == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF062D76))
+                }
+            } else if (error != null && book == null) {
                 Text(
                     text = error ?: "Lỗi không xác định",
                     color = Color.Red,

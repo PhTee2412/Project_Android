@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import android.util.Log
 class AuthViewModel(
     private val apiService: ApiService,
     private val sessionManager: SessionManager,
@@ -96,6 +96,7 @@ class AuthViewModel(
                         name = user?.name,
                         email = user?.email
                     )
+                    Log.d("LOGIN_DEBUG", "Đã lưu token cho user: ${user?.id}, role: ${user?.role}")
                     _message.value = response.message ?: "Đăng nhập thành công"
                     onLoginSuccess()
                 } else {

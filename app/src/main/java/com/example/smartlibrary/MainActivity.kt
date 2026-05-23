@@ -117,7 +117,15 @@ fun MainApp(
 
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
+            // On logout: clear session-dependent viewmodels so UI doesn't show previous user's data
             chatViewModel.clearChat()
+            borrowedViewModel.clearBorrowCards()
+            finesViewModel.clearFines()
+        } else {
+            // On login: reload user specific data
+            borrowedViewModel.loadBorrowCards()
+            finesViewModel.loadFines()
+
         }
     }
 

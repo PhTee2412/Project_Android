@@ -4,9 +4,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
-
+import com.google.gson.annotations.SerializedName
 
 interface ApiService {
+    // ==================== BOOK APIs ====================
     @GET("api/book")
     suspend fun getAllBooks(): List<BookResponse>
 
@@ -34,27 +35,25 @@ interface ApiService {
     @GET("api/book/{id}")
     suspend fun getBookById(@Path("id") id: String): BookResponse
 
-    @POST("api/borrow-cards")
-    suspend fun borrowBook(@Body request: BorrowRequest): Response<Unit>
-
-
+    // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
 
     @GET("api/category-child/category/{parentId}")
     suspend fun getCategoryChildren(@Path("parentId") parentId: String): List<CategoryChildResponse>
 
+    // ==================== NOTIFICATION APIs ====================
     @GET("api/notification/{userId}")
     suspend fun getNotifications(@Path("userId") userId: String): List<NotificationItem>
 
     @PUT("api/notification/mark-as-read/{id}")
     suspend fun markNotificationAsRead(@Path("id") id: Long): Response<Unit>
 
-    // Settings
+    // ==================== SETTINGS APIs ====================
     @GET("api/settings")
     suspend fun getSettings(): Setting
 
-    // Cart
+    // ==================== CART APIs ====================
     @GET("api/cart/{userId}")
     suspend fun getCart(@Path("userId") userId: String): CartResponseWrapper
 
@@ -70,10 +69,11 @@ interface ApiService {
         @Body bookIds: List<Long>
     ): Response<Unit>
 
+    // ==================== CHAT APIs ====================
     @POST("api/chat/message")
     suspend fun sendChatMessage(@Body request: ChatRequest): ChatResponse
 
-    // --- Profile API ---
+    // ==================== PROFILE APIs ====================
     @GET("api/user/{id}")
     suspend fun getUserProfile(@Path("id") id: String): User
 
@@ -93,8 +93,12 @@ interface ApiService {
     @PUT("api/change-password")
     suspend fun changePassword(@Body body: ChangePasswordRequest): Response<ChangePasswordResponse>
 
-    // --- Borrow Cards API ---
-    @GET("api/borrow-cards/user/{userId}")
+    // ==================== BORROW CARD APIs ====================
+    @POST("api/borrow-cards")
+    suspend fun borrowBook(@Body request: BorrowRequest): Response<Unit>
+
+    // Lấy danh sách phiếu mượn của user (Backend dùng POST)
+    @POST("api/borrow-cards/user/{userId}")
     suspend fun getBorrowCardsByUser(@Path("userId") userId: String): List<BorrowCardResponse>
 
     @GET("api/borrow-cards/{id}")
@@ -103,7 +107,7 @@ interface ApiService {
     @DELETE("api/borrow-cards/{id}")
     suspend fun deleteBorrowCard(@Path("id") id: String): Response<Unit>
 
-    // --- Fines API ---
+    // ==================== FINE APIs ====================
     @GET("api/fines/{userId}")
     suspend fun getFinesByUser(@Path("userId") userId: String): List<FineResponse>
 
@@ -116,7 +120,7 @@ interface ApiService {
     @POST("api/fine/payment/confirm")
     suspend fun confirmFinePayment(@Body body: ConfirmPaymentRequest): Response<Unit>
 
-    // --- Auth API ---
+    // ==================== AUTH APIs ====================
     @POST("api/login")
     suspend fun login(@Body body: LoginRequest): LoginResponse
 
@@ -133,6 +137,7 @@ interface ApiService {
     suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
 }
 
+// ==================== DATA CLASSES (Giữ nguyên) ====================
 data class SocialLoginRequest(val token: String)
 
 data class BookResponse(
@@ -199,7 +204,7 @@ data class CartResponseWrapper(
 )
 
 data class CartItemDTO(
-    val bookId: Long,          // Backend trả về bookId (Long)
+    val bookId: Long,
     val tenSach: String,
     val tenTacGia: String?,
     val nxb: String?,
@@ -221,7 +226,6 @@ data class ChatResponse(
     val status: String = "success"
 )
 
-// --- User Profile Responses ---
 data class UserProfileResponse(
     val status: String? = null,
     val message: String? = null,
@@ -264,7 +268,6 @@ data class ChangePasswordResponse(
     val status: String? = null
 )
 
-// --- Borrow Card Data Classes ---
 data class BorrowCardResponse(
     val id: Int,
     val userId: Int,
@@ -277,7 +280,7 @@ data class BorrowCardResponse(
 )
 
 data class BorrowedBookBrief(
-    val bookId: Int,
+    @SerializedName("maSach") val bookId: Int,
     val childBookId: String? = null,
     val name: String?,
     val author: String?,
@@ -299,7 +302,6 @@ data class BorrowCardDetailResponse(
     val bookIds: List<BorrowedBookBrief>?
 )
 
-// --- Fines Data Classes ---
 data class FineResponse(
     val id: Int,
     val userId: Int? = null,
@@ -318,7 +320,7 @@ data class UserBrief(
 
 data class FineDetailResponse(
     val id: Int,
-    val userId: Int? = null, // Đổi từ UserBrief? thành Int? để khớp với giá trị NUMBER từ Backend
+    val userId: Int? = null,
     val soTien: Double? = null,
     val noiDung: String? = null,
     val trangThai: String? = null,
@@ -336,7 +338,6 @@ data class BorrowCardInFine(
 data class MomoPaymentResponse(val payUrl: String, val status: String?)
 data class ConfirmPaymentRequest(val orderId: String, val amount: String)
 
-// --- Auth API ---
 data class LoginRequest(
     val email: String? = null,
     val phone: String? = null,

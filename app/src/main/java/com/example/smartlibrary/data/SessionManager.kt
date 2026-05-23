@@ -11,16 +11,16 @@ class SessionManager(context: Context) {
         const val ACCESS_TOKEN = "access_token"
         const val USER_NAME = "user_name"
         const val USER_EMAIL = "user_email"
-        const val READ_NOTIFICATIONS = "read_notifications"
+        const val READ_NOTIFICATIONS_PREFIX = "read_notifications_"
     }
 
     fun saveSession(userId: String, token: String, name: String?, email: String?) {
-        val editor = prefs.edit()
-        editor.putString(USER_ID, userId)
-        editor.putString(ACCESS_TOKEN, token)
-        editor.putString(USER_NAME, name)
-        editor.putString(USER_EMAIL, email)
-        editor.apply()
+        prefs.edit().apply {
+            putString(USER_ID, userId)
+            putString(ACCESS_TOKEN, token)
+            putString(USER_NAME, name)
+            putString(USER_EMAIL, email)
+        }.apply()
     }
 
     fun getUserId(): String? = prefs.getString(USER_ID, null)
@@ -30,20 +30,35 @@ class SessionManager(context: Context) {
     fun isLoggedIn(): Boolean = getAccessToken() != null
 
     fun clearSession() {
-        prefs.edit().clear().apply()
+        prefs.edit().apply {
+            remove(USER_ID)
+            remove(ACCESS_TOKEN)
+            remove(USER_NAME)
+            remove(USER_EMAIL)
+        }.apply()
+    }
+
+    // === THÔNG BÁO ĐÃ ĐỌC (THEO USER) ===
+    private fun getReadNotificationsKey(): String {
+        val userId = getUserId() ?: return "read_notifications_anonymous"
+        return READ_NOTIFICATIONS_PREFIX + userId
     }
 
     fun addReadNotification(id: String) {
-        val readSet = getReadNotifications().toMutableSet()
-        readSet.add(id)
-        prefs.edit().putStringSet(READ_NOTIFICATIONS, readSet).apply()
+        val key = getReadNotificationsKey()
+        val currentSet = prefs.getStringSet(key, emptySet()) ?: emptySet()
+        val newSet = currentSet.toMutableSet()
+        newSet.add(id)
+        prefs.edit().putStringSet(key, newSet).apply()
     }
 
     fun getReadNotifications(): Set<String> {
-        return prefs.getStringSet(READ_NOTIFICATIONS, emptySet()) ?: emptySet()
+        val key = getReadNotificationsKey()
+        return prefs.getStringSet(key, emptySet()) ?: emptySet()
     }
 
     fun clearReadNotifications() {
-        prefs.edit().remove(READ_NOTIFICATIONS).apply()
+        val key = getReadNotificationsKey()
+        prefs.edit().remove(key).apply()
     }
 }

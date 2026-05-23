@@ -25,11 +25,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import com.example.smartlibrary.ui.viewmodel.ProfileViewModel
 import com.example.smartlibrary.util.formatDate
@@ -49,9 +52,23 @@ fun ProfileScreen(
     val isOtpSent by viewModel.isOtpSent.collectAsState()
     val otp by viewModel.otp.collectAsState()
     val avatarFile by viewModel.avatarFile.collectAsState()
-    
+
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    // Tự động gọi load mỗi khi màn hình được hiển thị (ON_RESUME)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadUserProfile()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Launcher chọn ảnh
     val launcher = rememberLauncherForActivityResult(
@@ -68,7 +85,6 @@ fun ProfileScreen(
                             input.copyTo(output)
                         }
                     }
-                    // Chỉ set file vào ViewModel, chưa upload (Giống Web logic)
                     viewModel.setAvatarFile(tempFile)
                 }
             } catch (e: Exception) {
@@ -142,9 +158,10 @@ fun ProfileScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        if (isLoading && userInfo == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        // Luôn hiển thị loading khi chưa có dữ liệu (che đi trạng thái "Chưa cập nhật")
+        if (userInfo == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFF062D76))
             }
         } else {
             Column(
@@ -166,16 +183,15 @@ fun ProfileScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Avatar
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(CircleShape)
                                 .background(Color.LightGray)
                         ) {
-                            if (userInfo?.avatarUrl != null) {
+                            if (userInfo!!.avatarUrl != null) {
                                 AsyncImage(
-                                    model = userInfo?.avatarUrl,
+                                    model = userInfo!!.avatarUrl,
                                     contentDescription = "Avatar",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
@@ -194,12 +210,12 @@ fun ProfileScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = userInfo?.fullName ?: "Chưa cập nhật",
+                                text = userInfo!!.fullName ?: "Chưa cập nhật",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = userInfo?.email ?: "",
+                                text = userInfo!!.email ?: "",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray
                             )
@@ -241,13 +257,13 @@ fun ProfileScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        InfoItem("Họ và Tên", userInfo?.fullName ?: "", isEditing) {
+                        InfoItem("Họ và Tên", userInfo!!.fullName ?: "", isEditing) {
                             viewModel.onUserInfoChange(userInfo!!.copy(fullName = it))
                         }
-                        
-                        InfoItem("MSSV", userInfo?.studentId ?: "Chưa cập nhật", false) {}
 
-                        InfoItem("Email", userInfo?.email ?: "Chưa cập nhật", isEditing) {
+                        InfoItem("MSSV", userInfo!!.studentId ?: "Chưa cập nhật", false) {}
+
+                        InfoItem("Email", userInfo!!.email ?: "Chưa cập nhật", isEditing) {
                             viewModel.onUserInfoChange(userInfo!!.copy(email = it))
                         }
 
@@ -256,7 +272,7 @@ fun ProfileScreen(
                             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Text("Ngày Sinh", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                 OutlinedTextField(
-                                    value = userInfo?.birthdate ?: "",
+                                    value = userInfo!!.birthdate ?: "",
                                     onValueChange = {},
                                     readOnly = true,
                                     modifier = Modifier.fillMaxWidth(),
@@ -280,27 +296,25 @@ fun ProfileScreen(
                                 )
                             }
                         } else {
-                            InfoItem("Ngày Sinh", formatDate(userInfo?.birthdate, "Chưa cập nhật"), false) {}
+                            InfoItem("Ngày Sinh", formatDate(userInfo!!.birthdate, "Chưa cập nhật"), false) {}
                         }
 
-                        InfoItem("Số Điện Thoại", userInfo?.phone ?: "", isEditing) {
+                        InfoItem("Số Điện Thoại", userInfo!!.phone ?: "", isEditing) {
                             viewModel.onUserInfoChange(userInfo!!.copy(phone = it))
                         }
 
-                        InfoItem("Ngày Tham Gia", formatDate(userInfo?.joinDate, "Chưa cập nhật"), false) {}
+                        InfoItem("Ngày Tham Gia", formatDate(userInfo!!.joinDate, "Chưa cập nhật"), false) {}
 
-                        // Upload Avatar Section (Đồng bộ logic Web)
                         if (isEditing) {
                             Spacer(modifier = Modifier.height(24.dp))
                             Text("Upload ảnh đại diện", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            
+
                             Row(
                                 modifier = Modifier
                                     .padding(top = 8.dp)
                                     .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Nút Choose File
                                 Button(
                                     onClick = { launcher.launch("image/*") },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF90CAF9)),
@@ -309,10 +323,9 @@ fun ProfileScreen(
                                 ) {
                                     Text("Choose File", color = Color.Black, fontSize = 12.sp)
                                 }
-                                
+
                                 Spacer(modifier = Modifier.width(8.dp))
-                                
-                                // Hiển thị tên file
+
                                 Text(
                                     text = avatarFile?.name ?: "",
                                     modifier = Modifier.weight(1f),
@@ -324,7 +337,6 @@ fun ProfileScreen(
 
                                 Spacer(modifier = Modifier.width(8.dp))
 
-                                // Nút Upload (Chỉ hiện khi đã chọn file)
                                 if (avatarFile != null) {
                                     Button(
                                         onClick = { viewModel.uploadAvatar() },
@@ -344,7 +356,7 @@ fun ProfileScreen(
                         }
                     }
                 }
-                
+
                 if (isLoading && userInfo != null && !isOtpSent) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }

@@ -71,7 +71,7 @@ fun BorrowedCardsScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Tab Row
+            // Tab Row – giống hệt Next.js
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -81,22 +81,22 @@ fun BorrowedCardsScreen(
                 TabButton(
                     text = "Đã yêu cầu",
                     icon = Icons.Default.ListAlt,
-                    isSelected = selectedTab == "DA_YEU_CAU",
-                    onClick = { viewModel.onTabSelected("DA_YEU_CAU") },
+                    isSelected = selectedTab == "Đã yêu cầu",
+                    onClick = { viewModel.onTabSelected("Đã yêu cầu") },
                     modifier = Modifier.weight(1f)
                 )
                 TabButton(
                     text = "Đang mượn",
                     icon = Icons.Default.Book,
-                    isSelected = selectedTab == "DANG_MUON",
-                    onClick = { viewModel.onTabSelected("DANG_MUON") },
+                    isSelected = selectedTab == "Đang mượn",
+                    onClick = { viewModel.onTabSelected("Đang mượn") },
                     modifier = Modifier.weight(1f)
                 )
                 TabButton(
                     text = "Hết hạn",
                     icon = Icons.Default.Timer,
-                    isSelected = selectedTab == "HET_HAN",
-                    onClick = { viewModel.onTabSelected("HET_HAN") },
+                    isSelected = selectedTab == "Hết hạn",
+                    onClick = { viewModel.onTabSelected("Hết hạn") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -189,23 +189,33 @@ fun BorrowCardItem(
                     color = Color.Gray
                 )
 
-                val dateLabel = when (selectedTab) {
-                    "DANG_MUON" -> "Ngày trả dự kiến"
-                    "HET_HAN" -> "Ngày trả"
-                    else -> "Hạn lấy sách"
+                // Hiển thị ngày tương ứng theo tab, khớp với Next.js
+                when (selectedTab) {
+                    "Đang mượn" -> {
+                        Text(
+                            text = "Ngày trả dự kiến: ${formatDate(card.dueDate)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray
+                        )
+                    }
+                    "Hết hạn" -> {
+                        Text(
+                            text = "Ngày trả: ${formatDate(card.dueDate)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray
+                        )
+                    }
+                    else -> { // "Đã yêu cầu"
+                        Text(
+                            text = "Hạn lấy sách: ${formatDate(card.getBookDate)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray
+                        )
+                    }
                 }
-                val dateValue = when (selectedTab) {
-                    "DANG_MUON" -> card.dueDate
-                    "HET_HAN" -> card.dueDate
-                    else -> card.getBookDate
-                }
-
-                Text(
-                    text = "$dateLabel: ${formatDate(dateValue)}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray
-                )
             }
 
             Button(
