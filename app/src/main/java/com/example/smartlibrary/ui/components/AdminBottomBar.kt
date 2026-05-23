@@ -1,7 +1,9 @@
 package com.example.smartlibrary.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Warning
@@ -19,15 +21,27 @@ fun AdminBottomBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit
 ) {
-    BottomAppBar(
-        containerColor = Color.White,
-        contentColor = Color(0xFF062D76)
+    // Sử dụng Surface để dễ dàng điều chỉnh chiều cao (height)
+    Surface(
+        color = Color.White,
+        shadowElevation = 8.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding() // Thêm padding để tránh bị thanh điều hướng hệ thống che
+            .height(65.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            AdminBottomBarItem(
+                icon = Icons.Filled.Dashboard,
+                label = "Dashboard",
+                route = "admin_dashboard",
+                currentRoute = currentRoute,
+                onClick = { onNavigate("admin_dashboard") }
+            )
             AdminBottomBarItem(
                 icon = Icons.Filled.SwapHoriz,
                 label = "Mượn/Trả",
@@ -64,18 +78,20 @@ private fun AdminBottomBarItem(
     val isActive = currentRoute == route
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(8.dp)
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .padding(4.dp) // Giảm padding để thu gọn khoảng cách
+            .clickable(onClick = onClick)
     ) {
-        IconButton(onClick = onClick) {
-            Icon(
-                icon,
-                contentDescription = label,
-                tint = if (isActive) Color(0xFF6CB1DA) else Color.Gray
-            )
-        }
+        Icon(
+            icon,
+            contentDescription = label,
+            modifier = Modifier.size(24.dp), // Kích thước icon
+            tint = if (isActive) Color(0xFF6CB1DA) else Color.Gray
+        )
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = 10.sp, // Giảm size chữ một chút cho gọn
             color = if (isActive) Color(0xFF6CB1DA) else Color.Gray
         )
     }

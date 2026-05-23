@@ -5,20 +5,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.smartlibrary.data.SessionManager
 import com.example.smartlibrary.data.SessionManagerAdmin
 import com.example.smartlibrary.network.RetrofitClient
@@ -27,10 +28,6 @@ import com.example.smartlibrary.ui.components.AppHeader
 import com.example.smartlibrary.ui.screens.*
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
 import com.example.smartlibrary.ui.viewmodel.*
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import com.facebook.CallbackManager
 import com.facebook.FacebookSdk
 
@@ -46,8 +43,8 @@ class MainActivity : ComponentActivity() {
         FacebookSdk.fullyInitialize()
         callbackManager = CallbackManager.Factory.create()
 
-        val userSession = SessionManager(this) // user_session
-        val adminSession = SessionManagerAdmin(this) // admin_session
+        val userSession = SessionManager(this)
+        val adminSession = SessionManagerAdmin(this)
 
         enableEdgeToEdge()
         setContent {
@@ -63,7 +60,11 @@ class MainActivity : ComponentActivity() {
             var isDarkMode by remember { mutableStateOf(false) }
 
             SmartLibraryTheme(darkTheme = isDarkMode) {
-                MainApp(mainViewModel, userSession, adminSession)
+                MainApp(
+                    viewModel = mainViewModel,
+                    userSession = userSession,
+                    adminSession = adminSession
+                )
             }
         }
     }
@@ -91,6 +92,17 @@ fun MainApp(
     val unreadNotifications by viewModel.unreadNotificationCount.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    var isAdminLoggedIn by remember { mutableStateOf(adminSession.getAccessToken() != null) }
+
+    // Tự động chuyển đến admin_main nếu admin đã đăng nhập (token còn hạn)
+    LaunchedEffect(isAdminLoggedIn) {
+        if (isAdminLoggedIn) {
+            navController.navigate("admin_main") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
+    }
 
     val borrowedViewModel: BorrowedCardsViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -423,6 +435,9 @@ fun MainApp(
                                     navController.navigate("admin_main") {
                                         popUpTo("admin_login") { inclusive = true }
                                     }
+                                },
+                                onAdminLoginSuccess = {
+                                    isAdminLoggedIn = true
                                 }
                             ) as T
                         }
@@ -435,7 +450,13 @@ fun MainApp(
             }
 
             composable("admin_main") {
-                AdminMainScreen(navController = navController)
+                AdminMainScreen(
+                    navController = navController,
+                    onLogout = {
+                        adminSession.clearSession()
+                        isAdminLoggedIn = false
+                    }
+                )
             }
         }
     }

@@ -145,6 +145,21 @@ interface ApiService {
     @POST("api/admin/verify-otp")
     suspend fun verifyAdminOtp(@Body body: VerifyOtpRequest): AdminLoginResponse
 
+
+    @GET("api/book/dashboard")
+    suspend fun getDashboard(): DashboardResponse
+
+    @GET("api/book/search")
+    suspend fun searchBooksAdmin(
+        @Query("all") all: String? = null,
+        @Query("title") title: String? = null,
+        @Query("author") author: String? = null,
+        @Query("category") category: String? = null,
+        @Query("publisher") publisher: String? = null,
+        @Query("year") year: String? = null,
+        @Query("sortByBorrowCount") sortByBorrowCount: Boolean = false
+    ): List<BookResponse>
+
 }
 
 // ==================== DATA CLASSES (Giữ nguyên) ====================
@@ -421,3 +436,19 @@ data class AdminLoginResponse(
     val email: String? = null   // backend trả về email khi yêu cầu OTP
 )
 
+data class DashboardResponse(
+    val totalBooks: Long,
+    val totalBookQuantity: Long,
+    val newBooksThisMonth: Long,
+    val borrowedBooksThisMonth: Long,
+    val monthlyStats: List<MonthlyStat>,
+    val booksToRestock: List<BookResponse>
+)
+
+data class MonthlyStat(
+    val monthLabel: String,
+    val totalBooks: Long,
+    val totalBookQuantity: Long,
+    val newBooks: Long,
+    val borrowedBooks: Long
+)

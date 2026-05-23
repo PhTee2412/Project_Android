@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 class AdminAuthViewModel(
     private val apiService: ApiService,
     private val sessionManagerAdmin: SessionManagerAdmin,
-    private val onLoginSuccess: () -> Unit = {}
+    private val onLoginSuccess: () -> Unit = {},
+    private val onAdminLoginSuccess: () -> Unit = {}
 ) : ViewModel() {
 
     var identifier by mutableStateOf("")
@@ -65,7 +66,6 @@ class AdminAuthViewModel(
                 val response = apiService.adminLogin(request)
 
                 if (response.data?.accessToken != null) {
-                    // Trường hợp đặc biệt: server trả thẳng token (không OTP)
                     val user = response.data.user
                     if (user?.role.equals("ADMIN", ignoreCase = true)) {
                         sessionManagerAdmin.saveSession(
@@ -77,11 +77,11 @@ class AdminAuthViewModel(
                         sessionManagerAdmin.saveUserRole("ADMIN")
                         _message.value = response.message ?: "Đăng nhập admin thành công"
                         onLoginSuccess()
+                        onAdminLoginSuccess()
                     } else {
                         _message.value = "Tài khoản này không có quyền admin"
                     }
                 } else if (response.email != null) {
-                    // Backend yêu cầu OTP
                     _otpEmail.value = response.email
                     _isOtpSent.value = true
                     _message.value = response.message ?: "Mã OTP đã được gửi đến email của bạn"
@@ -123,6 +123,7 @@ class AdminAuthViewModel(
                     _isOtpSent.value = false
                     _message.value = response.message ?: "Đăng nhập admin thành công"
                     onLoginSuccess()
+                    onAdminLoginSuccess()
                 } else {
                     _message.value = response.message ?: "Mã OTP không đúng hoặc đã hết hạn"
                 }

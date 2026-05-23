@@ -6,17 +6,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.smartlibrary.ui.components.AdminHeader
+import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AdminBottomBar
+import com.example.smartlibrary.ui.components.AdminHeader
+import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
 
 @Composable
-fun AdminMainScreen(navController: NavController) {
+fun AdminMainScreen(
+    navController: NavController,
+    onLogout: () -> Unit = {}
+) {
     val adminNavController = rememberNavController()
     val currentBackStackEntry by adminNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -26,8 +34,8 @@ fun AdminMainScreen(navController: NavController) {
             AdminHeader(
                 onNavigate = { route -> adminNavController.navigate(route) },
                 onLogout = {
-                    // Xóa session admin, quay về màn hình login user
-                    navController.navigate("login") {
+                    onLogout()
+                    navController.navigate("home") {
                         popUpTo(0) { inclusive = true }
                     }
                 }
@@ -53,9 +61,15 @@ fun AdminNavHost(adminNavController: NavHostController) {
         startDestination = "admin_dashboard"
     ) {
         composable("admin_dashboard") {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Admin Dashboard - Đang phát triển")
-            }
+            val dashboardViewModel: AdminDashboardViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminDashboardViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminDashboardContent(viewModel = dashboardViewModel)
         }
         composable("admin_books") { PlaceholderContent("Quản lý sách") }
         composable("admin_users") { PlaceholderContent("Quản lý người dùng") }
