@@ -79,7 +79,7 @@ fun AdminDashboardContent(viewModel: AdminDashboardViewModel) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Biểu đồ 2: Thống kê theo tuần
-                DashboardCard(title = "Lượt mượn sách theo tuần") {
+                DashboardCard(title = "Lượt mượn sách theo tuần trong tháng") {
                     val monthly = dashboardData!!.monthlyStats
                     if (monthly.isNotEmpty()) {
                         val weekLabels = listOf("Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4")
