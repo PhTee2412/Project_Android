@@ -11,22 +11,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.smartlibrary.data.SessionManager
+import com.example.smartlibrary.data.SessionManagerAdmin
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AppBottomBar
 import com.example.smartlibrary.ui.components.AppHeader
 import com.example.smartlibrary.ui.screens.*
 import com.example.smartlibrary.ui.theme.SmartLibraryTheme
 import com.example.smartlibrary.ui.viewmodel.*
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.smartlibrary.data.SessionManager
 import com.facebook.CallbackManager
 import com.facebook.FacebookSdk
 
@@ -37,13 +38,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize RetrofitClient with context for Authorization header
         RetrofitClient.initialize(this)
 
         FacebookSdk.fullyInitialize()
         callbackManager = CallbackManager.Factory.create()
 
-        val sessionManager = SessionManager(this)
+        val userSession = SessionManager(this)
+        val adminSession = SessionManagerAdmin(this)
 
         enableEdgeToEdge()
         setContent {
@@ -51,7 +52,7 @@ class MainActivity : ComponentActivity() {
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
-                        return MainViewModel(RetrofitClient.apiService, sessionManager) as T
+                        return MainViewModel(RetrofitClient.apiService, userSession) as T
                     }
                 }
             )
@@ -59,7 +60,11 @@ class MainActivity : ComponentActivity() {
             var isDarkMode by remember { mutableStateOf(false) }
 
             SmartLibraryTheme(darkTheme = isDarkMode) {
-                MainApp(mainViewModel, sessionManager)
+                MainApp(
+                    viewModel = mainViewModel,
+                    userSession = userSession,
+                    adminSession = adminSession
+                )
             }
         }
     }
@@ -75,7 +80,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainApp(
     viewModel: MainViewModel,
-    sessionManager: SessionManager
+    userSession: SessionManager,
+    adminSession: SessionManagerAdmin
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -87,12 +93,22 @@ fun MainApp(
     val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Khởi tạo các ViewModel dùng chung (Scoped to Activity/MainApp)
+    var isAdminLoggedIn by remember { mutableStateOf(adminSession.getAccessToken() != null) }
+
+    // Tự động chuyển đến admin_main nếu admin đã đăng nhập (token còn hạn)
+    LaunchedEffect(isAdminLoggedIn) {
+        if (isAdminLoggedIn) {
+            navController.navigate("admin_main") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
+    }
+
     val borrowedViewModel: BorrowedCardsViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return BorrowedCardsViewModel(RetrofitClient.apiService, sessionManager) as T
+                return BorrowedCardsViewModel(RetrofitClient.apiService, userSession) as T
             }
         }
     )
@@ -101,7 +117,7 @@ fun MainApp(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return ChatViewModel(RetrofitClient.apiService, sessionManager) as T
+                return ChatViewModel(RetrofitClient.apiService, userSession) as T
             }
         }
     )
@@ -110,28 +126,24 @@ fun MainApp(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return FinesViewModel(RetrofitClient.apiService, sessionManager) as T
+                return FinesViewModel(RetrofitClient.apiService, userSession) as T
             }
         }
     )
 
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
-            // On logout: clear session-dependent viewmodels so UI doesn't show previous user's data
             chatViewModel.clearChat()
             borrowedViewModel.clearBorrowCards()
             finesViewModel.clearFines()
         } else {
-            // On login: reload user specific data
             borrowedViewModel.loadBorrowCards()
             finesViewModel.loadFines()
-
         }
     }
 
     val newsViewModel: NewsViewModel = viewModel()
 
-    // Cập nhật số lượng thông báo và giỏ hàng khi chuyển trang
     LaunchedEffect(currentRoute, isLoggedIn) {
         if (isLoggedIn) {
             viewModel.refreshCounts()
@@ -146,6 +158,8 @@ fun MainApp(
             currentRoute != "change_password" &&
             currentRoute != "user_qrcode" &&
             currentRoute != "login" &&
+            currentRoute != "admin_login" &&
+            currentRoute != "admin_main" &&
             currentRoute?.startsWith("fine_detail") != true &&
             currentRoute?.startsWith("borrowed_card_detail") != true &&
             currentRoute?.startsWith("book_detail") != true &&
@@ -173,7 +187,8 @@ fun MainApp(
                         navController.navigate("home") {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    onAdminLoginClick = { navController.navigate("admin_login") }
                 )
             }
         },
@@ -208,7 +223,7 @@ fun MainApp(
                             @Suppress("UNCHECKED_CAST")
                             return AuthViewModel(
                                 apiService = RetrofitClient.apiService,
-                                sessionManager = sessionManager,
+                                sessionManager = userSession,
                                 onLoginSuccess = {
                                     viewModel.setLoggedIn(true)
                                     navController.navigate("home") {
@@ -261,7 +276,7 @@ fun MainApp(
                             @Suppress("UNCHECKED_CAST")
                             return CartViewModel(
                                 apiService = RetrofitClient.apiService,
-                                sessionManager = sessionManager,
+                                sessionManager = userSession,
                                 onCartCountChanged = { count -> viewModel.setCartCount(count) }
                             ) as T
                         }
@@ -279,7 +294,7 @@ fun MainApp(
                             @Suppress("UNCHECKED_CAST")
                             return NotificationViewModel(
                                 apiService = RetrofitClient.apiService,
-                                sessionManager = sessionManager,
+                                sessionManager = userSession,
                                 onUnreadCountChanged = { count -> viewModel.setUnreadNotificationCount(count) }
                             ) as T
                         }
@@ -287,7 +302,7 @@ fun MainApp(
                 )
                 NotificationScreen(
                     viewModel = notificationViewModel,
-                    userId = sessionManager.getUserId() ?: ""
+                    userId = userSession.getUserId() ?: ""
                 )
             }
             composable("profile") {
@@ -295,7 +310,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return ProfileViewModel(RetrofitClient.apiService, sessionManager) as T
+                            return ProfileViewModel(RetrofitClient.apiService, userSession) as T
                         }
                     }
                 )
@@ -309,7 +324,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return ChangePasswordViewModel(RetrofitClient.apiService, sessionManager) as T
+                            return ChangePasswordViewModel(RetrofitClient.apiService, userSession) as T
                         }
                     }
                 )
@@ -323,7 +338,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return UserQRCodeViewModel(RetrofitClient.apiService, sessionManager) as T
+                            return UserQRCodeViewModel(RetrofitClient.apiService, userSession) as T
                         }
                     }
                 )
@@ -334,7 +349,7 @@ fun MainApp(
             }
             composable("borrowed_cards") {
                 BorrowedCardsScreen(
-                    viewModel = borrowedViewModel, // Dùng chung instance
+                    viewModel = borrowedViewModel,
                     onCardClick = { cardId -> navController.navigate("borrowed_card_detail/$cardId") },
                     onBack = { navController.popBackStack() }
                 )
@@ -346,7 +361,7 @@ fun MainApp(
                 val cardId = backStackEntry.arguments?.getInt("cardId") ?: 0
                 BorrowedCardDetailScreen(
                     cardId = cardId,
-                    viewModel = borrowedViewModel, // Dùng chung instance
+                    viewModel = borrowedViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -395,7 +410,7 @@ fun MainApp(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             @Suppress("UNCHECKED_CAST")
-                            return BookDetailViewModel(RetrofitClient.apiService, sessionManager, bookId) as T
+                            return BookDetailViewModel(RetrofitClient.apiService, userSession, bookId) as T
                         }
                     }
                 )
@@ -406,6 +421,47 @@ fun MainApp(
                     onBack = { navController.popBackStack() }
                 )
             }
+
+            // ==================== ADMIN ROUTES ====================
+            composable("admin_login") {
+                val adminAuthViewModel: AdminAuthViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return AdminAuthViewModel(
+                                apiService = RetrofitClient.apiService,
+                                sessionManagerAdmin = adminSession,
+                                onLoginSuccess = {
+                                    navController.navigate("admin_main") {
+                                        popUpTo("admin_login") { inclusive = true }
+                                    }
+                                },
+                                onAdminLoginSuccess = {
+                                    isAdminLoggedIn = true
+                                    RetrofitClient.setAdminSession(adminSession)
+                                }
+                            ) as T
+                        }
+                    }
+                )
+                AdminAuthScreen(
+                    viewModel = adminAuthViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("admin_main") {
+                AdminMainScreen(
+                    navController = navController,
+                    onLogout = {
+                        adminSession.clearSession()
+                        isAdminLoggedIn = false
+                        RetrofitClient.setAdminSession(null)
+                    }
+                )
+            }
+
+
         }
     }
 }

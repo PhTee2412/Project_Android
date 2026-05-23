@@ -3,8 +3,8 @@ package com.example.smartlibrary.data
 import android.content.Context
 import android.content.SharedPreferences
 
-class SessionManager(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
+open class SessionManager(context: Context, fileName: String = "user_session") {
+    private val prefs: SharedPreferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE)
 
     companion object {
         const val USER_ID = "user_id"
@@ -38,7 +38,6 @@ class SessionManager(context: Context) {
         }.apply()
     }
 
-    // === THÔNG BÁO ĐÃ ĐỌC (THEO USER) ===
     private fun getReadNotificationsKey(): String {
         val userId = getUserId() ?: return "read_notifications_anonymous"
         return READ_NOTIFICATIONS_PREFIX + userId
@@ -61,4 +60,10 @@ class SessionManager(context: Context) {
         val key = getReadNotificationsKey()
         prefs.edit().remove(key).apply()
     }
+
+    fun saveUserRole(role: String) {
+        prefs.edit().putString("user_role", role).apply()
+    }
+
+    fun getUserRole(): String? = prefs.getString("user_role", null)
 }

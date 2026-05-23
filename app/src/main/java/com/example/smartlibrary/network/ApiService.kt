@@ -35,6 +35,16 @@ interface ApiService {
     @GET("api/book/{id}")
     suspend fun getBookById(@Path("id") id: String): BookResponse
 
+    // ==================== CHILD BOOK APIs ====================
+    @GET("api/bookchild/book/{bookId}")
+    suspend fun getChildBooks(@Path("bookId") bookId: Long): List<ChildBookResponse>
+
+    @POST("api/bookchild/book/{bookId}/add")
+    suspend fun addChildBook(@Path("bookId") bookId: Long): Response<ChildBookResponse>
+
+    @DELETE("api/bookchild/{childId}")
+    suspend fun deleteChildBook(@Path("childId") childId: String): Response<Unit>
+
     // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
@@ -135,6 +145,38 @@ interface ApiService {
 
     @POST("api/auth/facebook")
     suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
+
+
+    // Endpoint login admin – dùng chung endpoint /api/login nhưng request khác
+    @POST("api/login")
+    suspend fun adminLogin(@Body body: AdminLoginRequest): AdminLoginResponse
+
+    // Endpoint verify OTP admin
+    @POST("api/admin/verify-otp")
+    suspend fun verifyAdminOtp(@Body body: VerifyOtpRequest): AdminLoginResponse
+
+
+    @GET("api/book/dashboard")
+    suspend fun getDashboard(): DashboardResponse
+
+    @GET("api/book/search")
+    suspend fun searchBooksAdmin(
+        @Query("all") all: String? = null,
+        @Query("title") title: String? = null,
+        @Query("author") author: String? = null,
+        @Query("category") category: String? = null,
+        @Query("publisher") publisher: String? = null,
+        @Query("year") year: String? = null,
+        @Query("status") status: String? = null,
+        @Query("sortByBorrowCount") sortByBorrowCount: Boolean = false
+    ): List<BookResponse>
+
+    @DELETE("api/book/{id}")
+    suspend fun deleteBook(@Path("id") id: Long): Response<Unit>
+
+    @GET("api/book/admin/all")
+    suspend fun getAllBooksAdmin(): List<BookResponse>
+
 }
 
 // ==================== DATA CLASSES (Giữ nguyên) ====================
@@ -157,6 +199,12 @@ data class BookResponse(
     val categoryChildId: String? = null,
     val categoryChildName: String? = null,
     val categoryParentName: String? = null
+)
+
+data class ChildBookResponse(
+    val id: String,
+    val barcode: String? = null,
+    val status: String? = null
 )
 
 data class CategoryResponse(
@@ -394,3 +442,36 @@ data class User(
 )
 
 data class SettingsData(val maxBorrowedBooks: Int? = null)
+
+// ==================== ADMIN AUTH (riêng biệt) ====================
+
+data class AdminLoginRequest(
+    val email: String? = null,
+    val phone: String? = null,
+    val password: String,
+    val isFEAdmin: Boolean = true
+)
+
+data class AdminLoginResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: LoginData? = null,
+    val email: String? = null   // backend trả về email khi yêu cầu OTP
+)
+
+data class DashboardResponse(
+    val totalBooks: Long,
+    val totalBookQuantity: Long,
+    val newBooksThisMonth: Long,
+    val borrowedBooksThisMonth: Long,
+    val monthlyStats: List<MonthlyStat>,
+    val booksToRestock: List<BookResponse>
+)
+
+data class MonthlyStat(
+    val monthLabel: String,
+    val totalBooks: Long,
+    val totalBookQuantity: Long,
+    val newBooks: Long,
+    val borrowedBooks: Long
+)
