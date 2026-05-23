@@ -37,7 +37,10 @@ import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminBooksContent(viewModel: AdminBooksViewModel) {
+fun AdminBooksContent(
+    viewModel: AdminBooksViewModel,
+    onBookClick: (Long) -> Unit = {}
+) {
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val searchMode by viewModel.searchMode.collectAsState()
@@ -345,7 +348,7 @@ fun AdminBooksContent(viewModel: AdminBooksViewModel) {
                         items(paginatedBooks, key = { it.maSach }) { book ->
                             BookAdminCard(
                                 book = book,
-                                onView = { /* TODO: Chi tiết */ },
+                                onView = { onBookClick(book.maSach) },
                                 onEdit = { /* TODO: Chỉnh sửa */ },
                                 onDelete = { viewModel.requestDelete(book) }
                             )

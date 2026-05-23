@@ -106,7 +106,10 @@ class AdminBooksViewModel(
             try {
                 val response = apiService.deleteBook(book.maSach)
                 if (response.isSuccessful) {
-                    _books.value = _books.value.filter { it.maSach != book.maSach }
+                    // Cập nhật trạng thái cục bộ thay vì xóa khỏi list
+                    _books.value = _books.value.map {
+                        if (it.maSach == book.maSach) it.copy(trangThai = "DA_XOA") else it
+                    }
                     _message.value = "Xoá sách thành công"
                 } else {
                     _message.value = "Xoá thất bại"

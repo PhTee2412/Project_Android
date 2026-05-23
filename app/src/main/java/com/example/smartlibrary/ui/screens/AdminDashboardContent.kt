@@ -2,6 +2,7 @@ package com.example.smartlibrary.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,7 +34,10 @@ import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminDashboardContent(viewModel: AdminDashboardViewModel) {
+fun AdminDashboardContent(
+    viewModel: AdminDashboardViewModel,
+    onBookClick: (Long) -> Unit = {}
+) {
     val dashboardData by viewModel.dashboardData.collectAsState()
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -153,7 +157,10 @@ fun AdminDashboardContent(viewModel: AdminDashboardViewModel) {
                 }
             } else {
                 items(displayedBooks, key = { it.maSach }) { book ->
-                    ModernBookCard(book = book)
+                    ModernBookCard(
+                        book = book,
+                        onClick = { onBookClick(book.maSach) }
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
@@ -310,9 +317,14 @@ fun TabButton(
 }
 
 @Composable
-fun ModernBookCard(book: BookResponse) {
+fun ModernBookCard(
+    book: BookResponse,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)

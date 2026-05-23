@@ -35,6 +35,16 @@ interface ApiService {
     @GET("api/book/{id}")
     suspend fun getBookById(@Path("id") id: String): BookResponse
 
+    // ==================== CHILD BOOK APIs ====================
+    @GET("api/bookchild/book/{bookId}")
+    suspend fun getChildBooks(@Path("bookId") bookId: Long): List<ChildBookResponse>
+
+    @POST("api/bookchild/book/{bookId}/add")
+    suspend fun addChildBook(@Path("bookId") bookId: Long): Response<ChildBookResponse>
+
+    @DELETE("api/bookchild/{childId}")
+    suspend fun deleteChildBook(@Path("childId") childId: String): Response<Unit>
+
     // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
@@ -189,6 +199,12 @@ data class BookResponse(
     val categoryChildId: String? = null,
     val categoryChildName: String? = null,
     val categoryParentName: String? = null
+)
+
+data class ChildBookResponse(
+    val id: String,
+    val barcode: String? = null,
+    val status: String? = null
 )
 
 data class CategoryResponse(

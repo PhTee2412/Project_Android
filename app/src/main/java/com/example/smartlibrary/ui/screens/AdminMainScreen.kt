@@ -11,13 +11,16 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AdminBottomBar
 import com.example.smartlibrary.ui.components.AdminHeader
+import com.example.smartlibrary.ui.viewmodel.AdminBookDetailViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
 
@@ -70,7 +73,10 @@ fun AdminNavHost(adminNavController: NavHostController) {
                     }
                 }
             )
-            AdminDashboardContent(viewModel = dashboardViewModel)
+            AdminDashboardContent(
+                viewModel = dashboardViewModel,
+                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") }
+            )
         }
         composable("admin_books") {
             val booksViewModel: AdminBooksViewModel = viewModel(
@@ -81,7 +87,28 @@ fun AdminNavHost(adminNavController: NavHostController) {
                     }
                 }
             )
-            AdminBooksContent(viewModel = booksViewModel)
+            AdminBooksContent(
+                viewModel = booksViewModel,
+                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") }
+            )
+        }
+        composable(
+            route = "admin_book_detail/{bookId}",
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getLong("bookId") ?: return@composable
+            val detailViewModel: AdminBookDetailViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminBookDetailViewModel(RetrofitClient.apiService, bookId) as T
+                    }
+                }
+            )
+            AdminBookDetailContent(
+                viewModel = detailViewModel,
+                onBack = { adminNavController.popBackStack() }
+            )
         }
         composable("admin_users") { PlaceholderContent("Quản lý người dùng") }
         composable("admin_borrow_fines") { PlaceholderContent("Quản lý mượn/trả") }

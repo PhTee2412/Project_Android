@@ -155,7 +155,7 @@ fun BookDetailScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Button(
-                                        onClick = { 
+                                        onClick = {
                                             if (isLoggedIn) {
                                                 viewModel.borrowBook(onSuccess = {})
                                             } else {
@@ -174,7 +174,7 @@ fun BookDetailScreen(
                                     }
 
                                     OutlinedButton(
-                                        onClick = { 
+                                        onClick = {
                                             if (isLoggedIn) {
                                                 viewModel.addToCart()
                                             } else {
