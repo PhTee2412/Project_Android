@@ -15,9 +15,15 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
     private const val BASE_URL = "http://localhost:8080/"
     private var sessionManager: SessionManager? = null
+    private var adminSessionManager: SessionManager? = null
 
     fun initialize(context: Context) {
-        sessionManager = SessionManager(context, "admin_session")
+        sessionManager = SessionManager(context)
+    }
+
+    // Hàm để set session admin khi cần
+    fun setAdminSession(session: SessionManager?) {
+        adminSessionManager = session
     }
 
     private fun getOkHttpClient(): OkHttpClient {
@@ -31,7 +37,9 @@ object RetrofitClient {
 
         builder.addInterceptor { chain ->
             val originalRequest = chain.request()
-            val token = sessionManager?.getAccessToken()
+            // Ưu tiên token admin nếu có, sau đó đến token user
+            val token = adminSessionManager?.getAccessToken()
+                ?: sessionManager?.getAccessToken()
             Log.d("RetrofitClient", "Gửi request tới: ${originalRequest.url}")
             Log.d("RetrofitClient", "Token hiện tại: ${if (token.isNullOrEmpty()) "KHÔNG CÓ TOKEN" else token}")
 

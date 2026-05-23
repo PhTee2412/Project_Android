@@ -160,6 +160,9 @@ interface ApiService {
         @Query("sortByBorrowCount") sortByBorrowCount: Boolean = false
     ): List<BookResponse>
 
+    @DELETE("api/book/{id}")
+    suspend fun deleteBook(@Path("id") id: Long): Response<Unit>
+
 }
 
 // ==================== DATA CLASSES (Giữ nguyên) ====================

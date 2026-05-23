@@ -438,6 +438,7 @@ fun MainApp(
                                 },
                                 onAdminLoginSuccess = {
                                     isAdminLoggedIn = true
+                                    RetrofitClient.setAdminSession(adminSession)
                                 }
                             ) as T
                         }
@@ -455,9 +456,12 @@ fun MainApp(
                     onLogout = {
                         adminSession.clearSession()
                         isAdminLoggedIn = false
+                        RetrofitClient.setAdminSession(null)
                     }
                 )
             }
+
+
         }
     }
 }

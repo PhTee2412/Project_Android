@@ -18,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AdminBottomBar
 import com.example.smartlibrary.ui.components.AdminHeader
+import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
 
 @Composable
@@ -71,7 +72,17 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminDashboardContent(viewModel = dashboardViewModel)
         }
-        composable("admin_books") { PlaceholderContent("Quản lý sách") }
+        composable("admin_books") {
+            val booksViewModel: AdminBooksViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminBooksViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminBooksContent(viewModel = booksViewModel)
+        }
         composable("admin_users") { PlaceholderContent("Quản lý người dùng") }
         composable("admin_borrow_fines") { PlaceholderContent("Quản lý mượn/trả") }
         composable("admin_fines") { PlaceholderContent("Quản lý phiếu phạt") }
