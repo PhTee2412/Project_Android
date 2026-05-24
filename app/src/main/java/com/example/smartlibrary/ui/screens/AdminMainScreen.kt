@@ -224,7 +224,56 @@ fun AdminNavHost(adminNavController: NavHostController) {
                 onBack = { adminNavController.popBackStack() }
             )
         }
-        composable("admin_users") { PlaceholderContent("Quản lý người dùng") }
+
+        // --- User Management Routes ---
+        composable("admin_users") {
+            val userListVM: AdminUserListViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminUserListViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminUserListScreen(
+                viewModel = userListVM,
+                onNavigate = { route -> adminNavController.navigate(route) }
+            )
+        }
+        composable("admin_add_user") {
+            val addUserVM: AdminAddUserViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminAddUserViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminAddUserScreen(
+                viewModel = addUserVM,
+                onUserCreated = { adminNavController.popBackStack() }
+            )
+        }
+        composable(
+            route = "admin_edit_user/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getInt("userId") ?: return@composable
+            val editUserVM: AdminEditUserViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminEditUserViewModel(RetrofitClient.apiService, userId) as T
+                    }
+                }
+            )
+            AdminEditUserScreen(
+                viewModel = editUserVM,
+                userId = userId,
+                onUserUpdated = { adminNavController.popBackStack() }
+            )
+        }
+
         composable("admin_borrow_fines") { PlaceholderContent("Quản lý mượn/trả") }
         composable("admin_fines") { PlaceholderContent("Quản lý phiếu phạt") }
         composable("admin_settings") { PlaceholderContent("Quản lý cài đặt") }
