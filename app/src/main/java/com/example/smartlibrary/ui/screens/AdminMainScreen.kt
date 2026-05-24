@@ -20,9 +20,7 @@ import androidx.navigation.navArgument
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AdminBottomBar
 import com.example.smartlibrary.ui.components.AdminHeader
-import com.example.smartlibrary.ui.viewmodel.AdminBookDetailViewModel
-import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
-import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
+import com.example.smartlibrary.ui.viewmodel.*
 
 @Composable
 fun AdminMainScreen(
@@ -46,10 +44,13 @@ fun AdminMainScreen(
             )
         },
         bottomBar = {
-            AdminBottomBar(
-                currentRoute = currentRoute,
-                onNavigate = { route -> adminNavController.navigate(route) }
-            )
+            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_fines", "admin_fines", "admin_settings")
+            if (currentRoute in mainRoutes) {
+                AdminBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> adminNavController.navigate(route) }
+                )
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -89,9 +90,80 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminBooksContent(
                 viewModel = booksViewModel,
-                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") }
+                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") },
+                onAddBookClick = { adminNavController.navigate("admin_add_book") },
+                onEditBookClick = { bookId -> adminNavController.navigate("admin_edit_book/$bookId") },
+                onCategoryManageClick = { adminNavController.navigate("admin_categories") }
             )
         }
+        
+        // --- Category Management Routes ---
+        composable("admin_categories") {
+            val catViewModel: CategoryListViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return CategoryListViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            CategoryListScreen(
+                viewModel = catViewModel,
+                onNavigate = { route -> adminNavController.navigate(route) }
+            )
+        }
+        composable("admin_add_category") {
+            val addCatViewModel: AddCategoryViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AddCategoryViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AddCategoryScreen(
+                viewModel = addCatViewModel,
+                onSaved = { adminNavController.popBackStack() }
+            )
+        }
+        composable(
+            route = "admin_edit_category_parent/{parentId}",
+            arguments = listOf(navArgument("parentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val parentId = backStackEntry.arguments?.getString("parentId") ?: return@composable
+            val editParentVM: EditCategoryParentViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return EditCategoryParentViewModel(RetrofitClient.apiService, parentId) as T
+                    }
+                }
+            )
+            EditCategoryParentScreen(
+                viewModel = editParentVM,
+                onNavigateToChild = { childId -> adminNavController.navigate("admin_edit_category_child/$childId") },
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+        composable(
+            route = "admin_edit_category_child/{childId}",
+            arguments = listOf(navArgument("childId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val childId = backStackEntry.arguments?.getString("childId") ?: return@composable
+            val editChildVM: EditCategoryChildViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return EditCategoryChildViewModel(RetrofitClient.apiService, childId) as T
+                    }
+                }
+            )
+            EditCategoryChildScreen(
+                viewModel = editChildVM,
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+
         composable(
             route = "admin_book_detail/{bookId}",
             arguments = listOf(navArgument("bookId") { type = NavType.LongType })
@@ -107,6 +179,48 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminBookDetailContent(
                 viewModel = detailViewModel,
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+        composable("admin_add_book") {
+            val addBookViewModel: AdminAddBookViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminAddBookViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminAddBookContent(
+                viewModel = addBookViewModel,
+                onBookAdded = { bookId -> 
+                    adminNavController.navigate("admin_book_detail/$bookId") {
+                        popUpTo("admin_add_book") { inclusive = true }
+                    }
+                },
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+        composable(
+            route = "admin_edit_book/{bookId}",
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getLong("bookId") ?: return@composable
+            val editViewModel: AdminEditBookViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminEditBookViewModel(RetrofitClient.apiService, bookId) as T
+                    }
+                }
+            )
+            AdminEditBookContent(
+                viewModel = editViewModel,
+                onBookUpdated = { id -> 
+                    adminNavController.navigate("admin_book_detail/$id") {
+                        popUpTo("admin_edit_book/{bookId}") { inclusive = true }
+                    }
+                },
                 onBack = { adminNavController.popBackStack() }
             )
         }

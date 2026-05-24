@@ -91,7 +91,7 @@ class CategoriesViewModel(private val apiService: ApiService) : ViewModel() {
                 CategoryChildResponse(
                     id = id,
                     name = name,
-                    parentId = parentId.toLongOrNull(),
+                    parentId = parentId,
                     parentName = parentName
                 )
             }.sortedBy { it.name } // sắp xếp theo tên

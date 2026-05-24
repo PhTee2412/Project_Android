@@ -35,6 +35,16 @@ interface ApiService {
     @GET("api/book/{id}")
     suspend fun getBookById(@Path("id") id: String): BookResponse
 
+    @POST("api/book")
+    suspend fun addBook(@Body payload: AddBookRequest): Response<BookResponse>
+
+    @PATCH("api/book/{id}")
+    suspend fun updateBook(@Path("id") id: Long, @Body updates: Map<String, @JvmSuppressWildcards Any?>): Response<Unit>
+
+    @Multipart
+    @POST("api/upload/image")
+    suspend fun uploadImage(@Part files: List<MultipartBody.Part>): Response<List<String>>
+
     // ==================== CHILD BOOK APIs ====================
     @GET("api/bookchild/book/{bookId}")
     suspend fun getChildBooks(@Path("bookId") bookId: Long): List<ChildBookResponse>
@@ -48,6 +58,30 @@ interface ApiService {
     // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
+
+    @POST("api/category")
+    suspend fun addCategory(@Body body: AddCategoryRequest): Response<CategoryResponse>
+
+    @GET("api/category/{id}")
+    suspend fun getCategoryById(@Path("id") id: String): CategoryResponse
+
+    @PATCH("api/category/{id}")
+    suspend fun updateCategory(@Path("id") id: String, @Body body: Map<String, String>): Response<Unit>
+
+    @DELETE("api/category/{id}")
+    suspend fun deleteCategory(@Path("id") id: String): Response<Unit>
+
+    @POST("api/category-child/category/{parentId}/add")
+    suspend fun addChildCategory(@Path("parentId") parentId: String, @Body body: Map<String, String>): Response<CategoryChildResponse>
+
+    @GET("api/category-child/{id}")
+    suspend fun getChildCategoryById(@Path("id") id: String): CategoryChildResponse
+
+    @PATCH("api/category-child/{id}")
+    suspend fun updateChildCategory(@Path("id") id: String, @Body body: Map<String, String>): Response<Unit>
+
+    @DELETE("api/category-child/{id}")
+    suspend fun deleteChildCategory(@Path("id") id: String): Response<Unit>
 
     @GET("api/category-child/category/{parentId}")
     suspend fun getCategoryChildren(@Path("parentId") parentId: String): List<CategoryChildResponse>
@@ -179,7 +213,33 @@ interface ApiService {
 
 }
 
-// ==================== DATA CLASSES (Giữ nguyên) ====================
+// ==================== DATA CLASSES ====================
+
+data class AddCategoryRequest(
+    val name: String,
+    val childrenNames: List<String>
+)
+
+data class AddBookRequest(
+    val book: BookPayload,
+    val quantity: Int
+)
+
+data class BookPayload(
+    val tenSach: String,
+    val moTa: String,
+    val tenTacGia: String,
+    val nxb: String,
+    val nam: Int,
+    val hinhAnh: List<String>,
+    val trongLuong: Int,
+    val donGia: Int,
+    val categoryChild: CategoryChildPayload,
+    val trangThai: String = "CON_SAN"
+)
+
+data class CategoryChildPayload(val id: String)
+
 data class SocialLoginRequest(val token: String)
 
 data class BookResponse(
@@ -210,13 +270,14 @@ data class ChildBookResponse(
 data class CategoryResponse(
     val id: String,
     val name: String,
-    val soLuongDanhMuc: Int?
+    val soLuongDanhMuc: Int?,
+    val children: List<CategoryChildResponse>? = null
 )
 
 data class CategoryChildResponse(
     val id: String,
     val name: String,
-    val parentId: Long? = null,
+    val parentId: String? = null, // Changed to String as it might be UUID or similar string ID
     val parentName: String? = null
 )
 

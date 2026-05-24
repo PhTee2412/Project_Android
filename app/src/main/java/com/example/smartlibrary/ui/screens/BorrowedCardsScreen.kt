@@ -71,7 +71,7 @@ fun BorrowedCardsScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Tab Row – giống hệt Next.js
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

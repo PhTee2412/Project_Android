@@ -92,7 +92,7 @@ fun AdminDashboardContent(
                         }
                         ModernBarChart(
                             stats = borrowData,
-                            colors = listOf(Color(0xFFFFB74D), Color(0xFFF57C00))
+                            colors = listOf(Color(0xFF9CE5F4), Color(0xFF9CE5F4))
                         )
                     } else {
                         Box(Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
