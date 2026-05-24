@@ -65,69 +65,93 @@ fun AddBorrowScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // User Selection
+            // User Selection Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("ID Người Dùng", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                // Column ID Người Dùng
+                Column(modifier = Modifier.weight(0.6f)) {
+                    Text("ID Người Dùng", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         OutlinedTextField(
                             value = userIdInput,
                             onValueChange = { viewModel.onUserIdInputChange(it) },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Nhập ID...") },
-                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            placeholder = { Text("Nhập ID...", fontSize = 14.sp) },
+                            shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White)
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = Color(0xFF9CE5F4),
+                                unfocusedBorderColor = Color.LightGray
+                            )
                         )
-                        Spacer(Modifier.width(8.dp))
                         Button(
                             onClick = { viewModel.findUser() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(56.dp)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF9CE5F4),
+                                contentColor = Color(0xFF062D76)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(56.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
-                            Text("Tìm")
+                            Text("Tìm", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Tên Người Dùng", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selectedUser != null) Color(0xFFE8F5E9) else Color(0xFFE0E0E0))
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Text(
-                            text = selectedUser?.username ?: "Chưa chọn người dùng",
+                // Column Tên Người Dùng
+                Column(modifier = Modifier.weight(0.4f)) {
+                    Text("Tên Người Dùng", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    OutlinedTextField(
+                        value = selectedUser?.username ?: "Chưa chọn",
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = if (selectedUser != null) Color(0xFFE8F5E9) else Color(0xFFF0F0F0),
+                            unfocusedContainerColor = if (selectedUser != null) Color(0xFFE8F5E9) else Color(0xFFF0F0F0),
+                            disabledContainerColor = Color(0xFFF0F0F0),
+                            focusedBorderColor = if (selectedUser != null) Color(0xFF4CAF50) else Color.LightGray,
+                            unfocusedBorderColor = Color.LightGray
+                        ),
+                        textStyle = androidx.compose.ui.text.TextStyle(
                             color = if (selectedUser != null) Color(0xFF2E7D32) else Color.Gray,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
                         )
-                    }
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Book Selection
-            Text("Chọn Sách", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
+            Text("Chọn Sách", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     OutlinedButton(
                         onClick = { isBookDropdownOpen = true },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -138,7 +162,8 @@ fun AddBorrowScreen(
                                 text = selectedBook?.let { "${it.maSach} - ${it.tenSach}" } ?: "Nhấn để chọn sách",
                                 color = if (selectedBook != null) Color.Black else Color.Gray,
                                 modifier = Modifier.weight(1f),
-                                maxLines = 1
+                                maxLines = 1,
+                                fontSize = 14.sp
                             )
                             Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF062D76))
                         }
@@ -147,13 +172,13 @@ fun AddBorrowScreen(
                     DropdownMenu(
                         expanded = isBookDropdownOpen,
                         onDismissRequest = { isBookDropdownOpen = false },
-                        modifier = Modifier.fillMaxWidth(0.8f).heightIn(max = 300.dp)
+                        modifier = Modifier.fillMaxWidth(0.85f).heightIn(max = 300.dp).background(Color.White)
                     ) {
                         bookList.forEach { book ->
                             DropdownMenuItem(
                                 text = {
                                     Column {
-                                        Text("${book.maSach} - ${book.tenSach}", fontWeight = FontWeight.Bold)
+                                        Text("${book.maSach} - ${book.tenSach}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Text(book.tenTacGia ?: "N/A", fontSize = 12.sp, color = Color.Gray)
                                     }
                                 },
@@ -166,47 +191,57 @@ fun AddBorrowScreen(
                     }
                 }
                 
-                Spacer(Modifier.width(8.dp))
-                
-                IconButton(
+                Button(
                     onClick = { viewModel.addBook() },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF062D76))
+                    modifier = Modifier.size(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF9CE5F4),
+                        contentColor = Color(0xFF062D76)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Thêm vào danh sách", tint = Color.White)
+                    Icon(Icons.Default.Add, contentDescription = "Thêm vào danh sách")
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Borrow List
+            // Borrow List Header
             Text(
                 text = "Danh sách sách mượn (${borrowList.size})",
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 color = Color(0xFF062D76),
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White)
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Borrow List Content
+            Card(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                items(borrowList) { book ->
-                    BorrowedBookGridItem(book = book, onRemove = { viewModel.removeBook(book) })
+                if (borrowList.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Chưa có sách nào", color = Color.Gray, fontSize = 14.sp)
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize().padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(borrowList) { book ->
+                            BorrowedBookGridItem(book = book, onRemove = { viewModel.removeBook(book) })
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Footer Button
             Button(
@@ -214,16 +249,19 @@ fun AddBorrowScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
-                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF9CE5F4),
+                    contentColor = Color(0xFF062D76)
+                ),
+                shape = RoundedCornerShape(16.dp),
                 enabled = !isSubmitting
             ) {
                 if (isSubmitting) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = Color(0xFF062D76), modifier = Modifier.size(24.dp))
                 } else {
                     Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Hoàn Tất", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Hoàn Tất", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -243,33 +281,55 @@ fun BorrowedBookGridItem(book: BookResponse, onRemove: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AsyncImage(
-                model = book.hinhAnh?.firstOrNull() ?: "",
-                contentDescription = null,
-                modifier = Modifier
-                    .size(60.dp, 90.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(book.tenSach, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                Text(book.tenTacGia ?: "N/A", fontSize = 12.sp, color = Color.Gray, maxLines = 1)
-                Text("ID: ${book.maSach}", fontSize = 11.sp, color = Color.Gray)
-                
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = book.hinhAnh?.firstOrNull() ?: "",
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
                 IconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(24.dp).align(Alignment.End)
+                    modifier = Modifier
+                        .size(28.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Xóa", tint = Color.Red, modifier = Modifier.size(16.dp))
                 }
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                book.tenSach,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                book.tenTacGia ?: "N/A",
+                fontSize = 11.sp,
+                color = Color.Gray,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                "ID: ${book.maSach}",
+                fontSize = 10.sp,
+                color = Color.Gray,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
