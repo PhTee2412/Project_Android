@@ -15,12 +15,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.smartlibrary.network.BorrowedBookBrief
-import com.example.smartlibrary.network.BorrowCardDetailResponse
 import com.example.smartlibrary.ui.viewmodel.BorrowDetailViewModel
+import com.example.smartlibrary.util.formatDate
 
 @Composable
 fun BorrowDetailScreen(
@@ -57,75 +58,75 @@ fun BorrowDetailScreen(
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFF062D76))
         } else if (detail != null) {
             val info = detail!!
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(
-                        onClick = { showDeleteDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                        shape = RoundedCornerShape(8.dp)
+                // Nút xóa dạng Icon gọn gàng
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Xóa phiếu")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Info Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            InfoColumn(label = "ID Phiếu", value = info.id.toString(), modifier = Modifier.weight(1f))
-                            InfoColumn(label = "ID Người Dùng", value = info.userId.toString(), modifier = Modifier.weight(1f))
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            InfoColumn(label = "Tên Người Dùng", value = info.userName ?: "N/A", modifier = Modifier.weight(1f))
-                            InfoColumn(label = "Số lượng mượn", value = "${info.totalBooks ?: 0} cuốn", modifier = Modifier.weight(1f))
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            InfoColumn(label = "Ngày mượn", value = formatDate(info.borrowDate), modifier = Modifier.weight(1f))
-                            val dateLabel = if (info.dueDate != null) "Ngày trả" else "Hạn lấy sách"
-                            val dateValue = info.dueDate ?: info.getBookDate
-                            InfoColumn(label = dateLabel, value = formatDate(dateValue), modifier = Modifier.weight(1f))
+                        FilledIconButton(
+                            onClick = { showDeleteDialog = true },
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = Color.Red,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Xóa phiếu")
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Danh sách sách mượn",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF062D76),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(info.bookIds ?: emptyList()) { book ->
-                        BorrowedBookItem(book = book)
+                // Thẻ thông tin phiếu mượn
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                InfoColumn(label = "ID Phiếu", value = info.id.toString(), modifier = Modifier.weight(1f))
+                                InfoColumn(label = "ID Người Dùng", value = info.userId.toString(), modifier = Modifier.weight(1f))
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                InfoColumn(label = "Tên Người Dùng", value = info.userName ?: "N/A", modifier = Modifier.weight(1f))
+                                InfoColumn(label = "Số lượng mượn", value = "${info.totalBooks ?: 0} cuốn", modifier = Modifier.weight(1f))
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                InfoColumn(label = "Ngày mượn", value = formatDate(info.borrowDate), modifier = Modifier.weight(1f))
+                                val dateLabel = if (info.dueDate != null) "Ngày trả" else "Hạn lấy sách"
+                                val dateValue = info.dueDate ?: info.getBookDate
+                                InfoColumn(label = dateLabel, value = formatDate(dateValue), modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Danh sách sách mượn",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF062D76),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Danh sách sách
+                items(info.bookIds ?: emptyList()) { book ->
+                    BorrowedBookItem(book = book)
                 }
             }
         } else {

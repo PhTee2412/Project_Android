@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -52,15 +51,13 @@ fun BorrowListScreen(
             .background(Color(0xFFF4F7FD))
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             // Tab Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val tabs = listOf("Đã yêu cầu", "Đang mượn", "Đã trả")
@@ -76,32 +73,70 @@ fun BorrowListScreen(
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(vertical = 12.dp)
                     ) {
-                        Text(text = tab, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal)
+                        Text(text = tab, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
                     }
                 }
             }
 
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
+            // Search Bar and Square Buttons Row
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                placeholder = { Text("Tìm kiếm ID phiếu hoặc ID người dùng") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                ),
-                singleLine = true
-            )
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Tìm kiếm...", fontSize = 14.sp) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
+                )
+
+                // Nút Gửi mail / Chặn (Dạng ô vuông)
+                if (selectedTab == "Đã yêu cầu" || selectedTab == "Đang mượn") {
+                    Button(
+                        onClick = { 
+                            if (selectedTab == "Đã yêu cầu") viewModel.markExpired() 
+                            else viewModel.askToReturn() 
+                        },
+                        modifier = Modifier.size(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (selectedTab == "Đã yêu cầu") Icons.Default.Block else Icons.Default.Mail,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
+
+                // Nút Tạo phiếu (Dạng ô vuông)
+                Button(
+                    onClick = { onNavigate("admin_add_borrow") },
+                    modifier = Modifier.size(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6CB1DA)),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+                }
+            }
 
             // Content
             if (isLoading && filteredCards.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF6CB1DA))
+                    CircularProgressIndicator(color = Color(0xFF9CE5F4))
                 }
             } else if (filteredCards.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -110,6 +145,7 @@ fun BorrowListScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(filteredCards) { card ->
@@ -126,7 +162,7 @@ fun BorrowListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                            .padding(vertical = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -151,45 +187,6 @@ fun BorrowListScreen(
                         }
                     }
                 }
-            }
-        }
-
-        // Floating Buttons
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (selectedTab == "Đã yêu cầu") {
-                FloatingActionButton(
-                    onClick = { viewModel.markExpired() },
-                    containerColor = Color.Red,
-                    contentColor = Color.White,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Default.Block, contentDescription = "Xét phiếu hết hạn")
-                }
-            }
-
-            if (selectedTab == "Đang mượn") {
-                FloatingActionButton(
-                    onClick = { viewModel.askToReturn() },
-                    containerColor = Color.Red,
-                    contentColor = Color.White,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Default.Mail, contentDescription = "Gửi mail hối trả")
-                }
-            }
-
-            FloatingActionButton(
-                onClick = { onNavigate("admin_add_borrow") },
-                containerColor = Color(0xFF6CB1DA),
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.PlusOne, contentDescription = "Thêm phiếu mượn")
             }
         }
 
@@ -226,7 +223,10 @@ fun BorrowCardItem(
                 
                 Button(
                     onClick = onClickDetail,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6CB1DA),
+                        contentColor = Color.Black
+                    ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
@@ -240,7 +240,7 @@ fun BorrowCardItem(
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
 
             Text(
                 text = "Ngày mượn: ${formatDate(card.borrowDate)}",
@@ -276,7 +276,6 @@ fun BorrowCardItem(
 fun formatDate(dateString: String?): String {
     if (dateString == null) return "N/A"
     return try {
-        // Assume format from API is ISO or similar, convert to vi-VN
         val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.US)
         val date = inputFormat.parse(dateString)
