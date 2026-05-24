@@ -211,9 +211,55 @@ interface ApiService {
     @GET("api/book/admin/all")
     suspend fun getAllBooksAdmin(): List<BookResponse>
 
+    // ==================== ADMIN USER APIs ====================
+    @GET("api/admin/users")
+    suspend fun getAdminUsers(): Response<UserListResponse>
+
+    @POST("api/admin/users")
+    suspend fun addAdminUser(@Body body: AddUserRequest): Response<AdminUserSingleResponse>
+
+    @PUT("api/admin/users/{id}")
+    suspend fun updateAdminUser(@Path("id") id: Int, @Body body: UpdateUserRequest): Response<AdminUserSingleResponse>
+
+    @DELETE("api/admin/users/{id}")
+    suspend fun deleteAdminUser(@Path("id") id: Int): Response<Unit>
+
+    @POST("api/admin/verify-otp-create")
+    suspend fun verifyOtpCreate(@Body body: VerifyOtpRequest): Response<AdminUserSingleResponse>
+
 }
 
 // ==================== DATA CLASSES ====================
+
+data class UserListResponse(
+    val message: String?,
+    val data: List<User>
+)
+
+data class AdminUserSingleResponse(
+    val message: String?,
+    val data: User?
+)
+
+data class AddUserRequest(
+    val username: String,
+    val email: String,
+    val phone: String?,
+    val birthdate: String?,
+    val avatar_url: String?,
+    val role: String,
+    val gender: String
+)
+
+data class UpdateUserRequest(
+    val username: String?,
+    val email: String?,
+    val phone: String?,
+    val birthdate: String?,
+    val avatar_url: String?,
+    val role: String?,
+    val gender: String?
+)
 
 data class AddCategoryRequest(
     val name: String,
