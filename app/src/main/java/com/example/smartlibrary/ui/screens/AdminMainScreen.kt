@@ -276,7 +276,17 @@ fun AdminNavHost(adminNavController: NavHostController) {
 
         composable("admin_borrow_fines") { PlaceholderContent("Quản lý mượn/trả") }
         composable("admin_fines") { PlaceholderContent("Quản lý phiếu phạt") }
-        composable("admin_settings") { PlaceholderContent("Quản lý cài đặt") }
+        composable("admin_settings") {
+            val viewModel: AdminSettingsViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminSettingsViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminSettingsContent(viewModel = viewModel)
+        }
         composable("admin_scan") { PlaceholderContent("Quét sách") }
     }
 }

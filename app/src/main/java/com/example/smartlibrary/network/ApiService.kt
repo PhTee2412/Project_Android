@@ -97,6 +97,9 @@ interface ApiService {
     @GET("api/settings")
     suspend fun getSettings(): Setting
 
+    @POST("api/settings")
+    suspend fun updateSettings(@Body settings: Setting): Response<Setting>
+
     // ==================== CART APIs ====================
     @GET("api/cart/{userId}")
     suspend fun getCart(@Path("userId") userId: String): CartResponseWrapper
