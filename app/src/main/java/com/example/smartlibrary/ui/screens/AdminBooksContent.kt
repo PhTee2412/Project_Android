@@ -40,7 +40,8 @@ import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 fun AdminBooksContent(
     viewModel: AdminBooksViewModel,
     onBookClick: (Long) -> Unit = {},
-    onAddBookClick: () -> Unit = {}
+    onAddBookClick: () -> Unit = {},
+    onEditBookClick: (Long) -> Unit = {}
 ) {
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -350,7 +351,7 @@ fun AdminBooksContent(
                             BookAdminCard(
                                 book = book,
                                 onView = { onBookClick(book.maSach) },
-                                onEdit = { /* TODO: Chỉnh sửa */ },
+                                onEdit = { onEditBookClick(book.maSach) },
                                 onDelete = { viewModel.requestDelete(book) }
                             )
                         }

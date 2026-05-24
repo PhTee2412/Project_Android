@@ -24,6 +24,7 @@ import com.example.smartlibrary.ui.viewmodel.AdminAddBookViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminBookDetailViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
+import com.example.smartlibrary.ui.viewmodel.AdminEditBookViewModel
 
 @Composable
 fun AdminMainScreen(
@@ -95,7 +96,8 @@ fun AdminNavHost(adminNavController: NavHostController) {
             AdminBooksContent(
                 viewModel = booksViewModel,
                 onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") },
-                onAddBookClick = { adminNavController.navigate("admin_add_book") }
+                onAddBookClick = { adminNavController.navigate("admin_add_book") },
+                onEditBookClick = { bookId -> adminNavController.navigate("admin_edit_book/$bookId") }
             )
         }
         composable(
@@ -128,9 +130,31 @@ fun AdminNavHost(adminNavController: NavHostController) {
             AdminAddBookContent(
                 viewModel = addBookViewModel,
                 onBookAdded = { bookId -> 
-                    // Chuyển đến màn hình chi tiết sách vừa tạo
                     adminNavController.navigate("admin_book_detail/$bookId") {
                         popUpTo("admin_add_book") { inclusive = true }
+                    }
+                },
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+        composable(
+            route = "admin_edit_book/{bookId}",
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getLong("bookId") ?: return@composable
+            val editViewModel: AdminEditBookViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminEditBookViewModel(RetrofitClient.apiService, bookId) as T
+                    }
+                }
+            )
+            AdminEditBookContent(
+                viewModel = editViewModel,
+                onBookUpdated = { id -> 
+                    adminNavController.navigate("admin_book_detail/$id") {
+                        popUpTo("admin_edit_book/{bookId}") { inclusive = true }
                     }
                 },
                 onBack = { adminNavController.popBackStack() }

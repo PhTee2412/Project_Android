@@ -38,6 +38,9 @@ interface ApiService {
     @POST("api/book")
     suspend fun addBook(@Body payload: AddBookRequest): Response<BookResponse>
 
+    @PATCH("api/book/{id}")
+    suspend fun updateBook(@Path("id") id: Long, @Body updates: Map<String, @JvmSuppressWildcards Any?>): Response<Unit>
+
     @Multipart
     @POST("api/upload/image")
     suspend fun uploadImage(@Part files: List<MultipartBody.Part>): Response<List<String>>
