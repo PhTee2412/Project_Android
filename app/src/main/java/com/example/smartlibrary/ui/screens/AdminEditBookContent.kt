@@ -349,7 +349,7 @@ fun AdminEditBookContent(
                     if (!isDeleted) {
                         Button(
                             onClick = { launcher.launch("image/*") },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.height(42.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp)

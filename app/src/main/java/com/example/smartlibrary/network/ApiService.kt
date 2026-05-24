@@ -59,6 +59,30 @@ interface ApiService {
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
 
+    @POST("api/category")
+    suspend fun addCategory(@Body body: AddCategoryRequest): Response<CategoryResponse>
+
+    @GET("api/category/{id}")
+    suspend fun getCategoryById(@Path("id") id: String): CategoryResponse
+
+    @PATCH("api/category/{id}")
+    suspend fun updateCategory(@Path("id") id: String, @Body body: Map<String, String>): Response<Unit>
+
+    @DELETE("api/category/{id}")
+    suspend fun deleteCategory(@Path("id") id: String): Response<Unit>
+
+    @POST("api/category-child/category/{parentId}/add")
+    suspend fun addChildCategory(@Path("parentId") parentId: String, @Body body: Map<String, String>): Response<CategoryChildResponse>
+
+    @GET("api/category-child/{id}")
+    suspend fun getChildCategoryById(@Path("id") id: String): CategoryChildResponse
+
+    @PATCH("api/category-child/{id}")
+    suspend fun updateChildCategory(@Path("id") id: String, @Body body: Map<String, String>): Response<Unit>
+
+    @DELETE("api/category-child/{id}")
+    suspend fun deleteChildCategory(@Path("id") id: String): Response<Unit>
+
     @GET("api/category-child/category/{parentId}")
     suspend fun getCategoryChildren(@Path("parentId") parentId: String): List<CategoryChildResponse>
 
@@ -191,6 +215,11 @@ interface ApiService {
 
 // ==================== DATA CLASSES ====================
 
+data class AddCategoryRequest(
+    val name: String,
+    val childrenNames: List<String>
+)
+
 data class AddBookRequest(
     val book: BookPayload,
     val quantity: Int
@@ -248,7 +277,7 @@ data class CategoryResponse(
 data class CategoryChildResponse(
     val id: String,
     val name: String,
-    val parentId: Long? = null,
+    val parentId: String? = null, // Changed to String as it might be UUID or similar string ID
     val parentName: String? = null
 )
 

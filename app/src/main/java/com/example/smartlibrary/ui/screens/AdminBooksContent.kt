@@ -41,7 +41,8 @@ fun AdminBooksContent(
     viewModel: AdminBooksViewModel,
     onBookClick: (Long) -> Unit = {},
     onAddBookClick: () -> Unit = {},
-    onEditBookClick: (Long) -> Unit = {}
+    onEditBookClick: (Long) -> Unit = {},
+    onCategoryManageClick: () -> Unit = {}
 ) {
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -314,9 +315,9 @@ fun AdminBooksContent(
                     }
 
                     Button(
-                        onClick = { /* TODO: Quản lý thể loại */ },
+                        onClick = onCategoryManageClick,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6CB1DA)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
                         modifier = Modifier.weight(0.40f).height(commonHeight),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {

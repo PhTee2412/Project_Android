@@ -125,7 +125,7 @@ fun AdminBookDetailContent(
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF062D76),
+                                    focusedBorderColor = Color(0xFF9CE5F4),
                                     unfocusedBorderColor = Color.Transparent,
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White
@@ -137,7 +137,7 @@ fun AdminBookDetailContent(
                         Button(
                             onClick = { /* ViewModel filters automatically */ },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
                             modifier = Modifier.size(50.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
@@ -162,7 +162,7 @@ fun AdminBookDetailContent(
                         onClick = { viewModel.addChildBook() },
                         enabled = !actionLoading,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF062D76)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
                         modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) {
                         if (actionLoading) {
