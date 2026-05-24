@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,13 +21,12 @@ fun AdminBottomBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit
 ) {
-    // Sử dụng Surface để dễ dàng điều chỉnh chiều cao (height)
     Surface(
         color = Color.White,
         shadowElevation = 8.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding() // Thêm padding để tránh bị thanh điều hướng hệ thống che
+            .navigationBarsPadding()
             .height(65.dp)
     ) {
         Row(
@@ -45,9 +44,9 @@ fun AdminBottomBar(
             AdminBottomBarItem(
                 icon = Icons.Filled.SwapHoriz,
                 label = "Mượn/Trả",
-                route = "admin_borrow_fines",
+                route = "admin_borrow_list",
                 currentRoute = currentRoute,
-                onClick = { onNavigate("admin_borrow_fines") }
+                onClick = { onNavigate("admin_borrow_list") }
             )
             AdminBottomBarItem(
                 icon = Icons.Filled.Warning,
@@ -57,7 +56,7 @@ fun AdminBottomBar(
                 onClick = { onNavigate("admin_fines") }
             )
             AdminBottomBarItem(
-                icon = Icons.Filled.QrCode2,
+                icon = Icons.Filled.QrCodeScanner,
                 label = "Quét sách",
                 route = "admin_scan",
                 currentRoute = currentRoute,
@@ -80,19 +79,19 @@ private fun AdminBottomBarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .padding(4.dp) // Giảm padding để thu gọn khoảng cách
+            .padding(4.dp)
             .clickable(onClick = onClick)
     ) {
         Icon(
             icon,
             contentDescription = label,
-            modifier = Modifier.size(24.dp), // Kích thước icon
-            tint = if (isActive) Color(0xFF6CB1DA) else Color.Gray
+            modifier = Modifier.size(24.dp),
+            tint = if (isActive) Color(0xFF062D76) else Color.Gray
         )
         Text(
             text = label,
-            fontSize = 10.sp, // Giảm size chữ một chút cho gọn
-            color = if (isActive) Color(0xFF6CB1DA) else Color.Gray
+            fontSize = 10.sp,
+            color = if (isActive) Color(0xFF062D76) else Color.Gray
         )
     }
 }

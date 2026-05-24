@@ -133,7 +133,7 @@ fun BorrowedCardDetailScreen(
 
                 // Books List
                 items(detail.bookIds ?: emptyList()) { book ->
-                    BorrowedBookItem(book = book)
+                    BorrowedBookDetailItem(book = book)
                 }
             }
         }
@@ -186,7 +186,7 @@ private fun InfoItem(label: String, value: String) {
 }
 
 @Composable
-private fun BorrowedBookItem(book: BorrowedBookBrief) {
+private fun BorrowedBookDetailItem(book: BorrowedBookBrief) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),

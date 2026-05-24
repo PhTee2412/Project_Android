@@ -154,6 +154,18 @@ interface ApiService {
     @DELETE("api/borrow-cards/{id}")
     suspend fun deleteBorrowCard(@Path("id") id: String): Response<Unit>
 
+    @GET("api/borrow-cards")
+    suspend fun getAllBorrowCards(): List<BorrowCardResponse>
+
+    @POST("api/borrow-cards")
+    suspend fun createBorrowCard(@Body request: CreateBorrowCardRequest): Response<BorrowCardResponse>
+
+    @PUT("api/borrow-cards/expired/{id}")
+    suspend fun markExpired(@Path("id") id: String): Response<Unit>
+
+    @POST("api/borrow-cards/askToReturn")
+    suspend fun askToReturn(@Body list: List<BorrowCardResponse>): Response<Unit>
+
     // ==================== FINE APIs ====================
     @GET("api/fines/{userId}")
     suspend fun getFinesByUser(@Path("userId") userId: String): List<FineResponse>
@@ -233,6 +245,13 @@ interface ApiService {
 }
 
 // ==================== DATA CLASSES ====================
+
+data class CreateBorrowCardRequest(
+    val userId: Long,
+    val bookIds: List<Long>,
+    val borrowDate: String? = null,
+    val dueDate: String? = null
+)
 
 data class UserListResponse(
     val message: String?,
@@ -445,6 +464,7 @@ data class BorrowedBookBrief(
     val image: String?,
     val category: String?,
     val publisher: String?,
+    val viTri: String? = null, // Added for location
     val borrowCount: Int? = null
 )
 
