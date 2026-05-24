@@ -35,6 +35,13 @@ interface ApiService {
     @GET("api/book/{id}")
     suspend fun getBookById(@Path("id") id: String): BookResponse
 
+    @POST("api/book")
+    suspend fun addBook(@Body payload: AddBookRequest): Response<BookResponse>
+
+    @Multipart
+    @POST("api/upload/image")
+    suspend fun uploadImage(@Part files: List<MultipartBody.Part>): Response<List<String>>
+
     // ==================== CHILD BOOK APIs ====================
     @GET("api/bookchild/book/{bookId}")
     suspend fun getChildBooks(@Path("bookId") bookId: Long): List<ChildBookResponse>
@@ -179,7 +186,28 @@ interface ApiService {
 
 }
 
-// ==================== DATA CLASSES (Giữ nguyên) ====================
+// ==================== DATA CLASSES ====================
+
+data class AddBookRequest(
+    val book: BookPayload,
+    val quantity: Int
+)
+
+data class BookPayload(
+    val tenSach: String,
+    val moTa: String,
+    val tenTacGia: String,
+    val nxb: String,
+    val nam: Int,
+    val hinhAnh: List<String>,
+    val trongLuong: Int,
+    val donGia: Int,
+    val categoryChild: CategoryChildPayload,
+    val trangThai: String = "CON_SAN"
+)
+
+data class CategoryChildPayload(val id: String)
+
 data class SocialLoginRequest(val token: String)
 
 data class BookResponse(
@@ -210,7 +238,8 @@ data class ChildBookResponse(
 data class CategoryResponse(
     val id: String,
     val name: String,
-    val soLuongDanhMuc: Int?
+    val soLuongDanhMuc: Int?,
+    val children: List<CategoryChildResponse>? = null
 )
 
 data class CategoryChildResponse(

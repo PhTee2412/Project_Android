@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import com.example.smartlibrary.network.RetrofitClient
 import com.example.smartlibrary.ui.components.AdminBottomBar
 import com.example.smartlibrary.ui.components.AdminHeader
+import com.example.smartlibrary.ui.viewmodel.AdminAddBookViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminBookDetailViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 import com.example.smartlibrary.ui.viewmodel.AdminDashboardViewModel
@@ -46,10 +47,14 @@ fun AdminMainScreen(
             )
         },
         bottomBar = {
-            AdminBottomBar(
-                currentRoute = currentRoute,
-                onNavigate = { route -> adminNavController.navigate(route) }
-            )
+            // Chỉ hiển thị BottomBar ở các màn hình chính
+            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_fines", "admin_fines", "admin_settings")
+            if (currentRoute in mainRoutes) {
+                AdminBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> adminNavController.navigate(route) }
+                )
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -89,7 +94,8 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminBooksContent(
                 viewModel = booksViewModel,
-                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") }
+                onBookClick = { bookId -> adminNavController.navigate("admin_book_detail/$bookId") },
+                onAddBookClick = { adminNavController.navigate("admin_add_book") }
             )
         }
         composable(
@@ -107,6 +113,26 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminBookDetailContent(
                 viewModel = detailViewModel,
+                onBack = { adminNavController.popBackStack() }
+            )
+        }
+        composable("admin_add_book") {
+            val addBookViewModel: AdminAddBookViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminAddBookViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminAddBookContent(
+                viewModel = addBookViewModel,
+                onBookAdded = { bookId -> 
+                    // Chuyển đến màn hình chi tiết sách vừa tạo
+                    adminNavController.navigate("admin_book_detail/$bookId") {
+                        popUpTo("admin_add_book") { inclusive = true }
+                    }
+                },
                 onBack = { adminNavController.popBackStack() }
             )
         }

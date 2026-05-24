@@ -39,7 +39,8 @@ import com.example.smartlibrary.ui.viewmodel.AdminBooksViewModel
 @Composable
 fun AdminBooksContent(
     viewModel: AdminBooksViewModel,
-    onBookClick: (Long) -> Unit = {}
+    onBookClick: (Long) -> Unit = {},
+    onAddBookClick: () -> Unit = {}
 ) {
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -133,11 +134,11 @@ fun AdminBooksContent(
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Không tính lại insets ở đây để tránh double padding
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Điều hướng sang Thêm sách */ },
+                onClick = onAddBookClick,
                 containerColor = Color(0xFF6CB1DA),
                 contentColor = Color.White
             ) {
@@ -148,7 +149,7 @@ fun AdminBooksContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF4F7FD)) // Đặt background trước padding
+                .background(Color(0xFFF4F7FD))
                 .padding(paddingValues)
         ) {
             Column(
@@ -364,7 +365,6 @@ fun AdminBooksContent(
                             }
                         }
                         
-                        // Thêm một khoảng trống nhỏ ở cuối danh sách để FAB không che khuất item cuối
                         item { Spacer(modifier = Modifier.height(70.dp)) }
                     }
                 }
@@ -531,14 +531,6 @@ fun BookAdminCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun BookMetricAdmin(label: String, value: String, color: Color) {
-    Column {
-        Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
-        Text(text = value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
     }
 }
 
