@@ -60,6 +60,9 @@ interface ApiService {
     @GET("api/bookchild/{id}")
     suspend fun getChildBookById(@Path("id") id: String): BookResponse
 
+    @GET("api/bookchild/barcode/{barcode}")
+    suspend fun getChildBookByBarcode(@Path("barcode") barcode: String): BookChildFullResponse
+
     // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
@@ -171,6 +174,20 @@ interface ApiService {
     @POST("api/borrow-cards/askToReturn")
     suspend fun askToReturn(@Body list: List<BorrowCardResponse>): Response<Unit>
 
+    @PUT("api/borrow-cards/borrow/{id}")
+    suspend fun borrowBooksConfirm(@Path("id") id: Int, @Body barcodes: List<String>): Response<Unit>
+
+    @PUT("api/borrow-cards/return-one/{cardId}")
+    suspend fun returnOneBook(@Path("cardId") cardId: Int, @Body body: Map<String, String>): Response<Unit>
+
+    // ==================== UPLOAD APIs ====================
+    @Multipart
+    @POST("api/upload/barcodeImage")
+    suspend fun uploadBarcodeImage(
+        @Part file: MultipartBody.Part,
+        @Part("type") type: RequestBody
+    ): Response<BarcodeUploadResponse>
+
     // ==================== FINE APIs ====================
     @GET("api/fines")
     suspend fun getAllFines(): List<FineResponse>
@@ -263,6 +280,15 @@ interface ApiService {
 
 // ==================== DATA CLASSES ====================
 
+data class BarcodeUploadResponse(val result: String?)
+
+data class BookChildFullResponse(
+    val id: String,
+    val barcode: String?,
+    val bookId: Long?,
+    val status: String?
+)
+
 data class AddFineRequest(
     val userId: Int,
     val soTien: Double,
@@ -350,7 +376,8 @@ data class BookResponse(
     val moTa: String? = null,
     val categoryChildId: String? = null,
     val categoryChildName: String? = null,
-    val categoryParentName: String? = null
+    val categoryParentName: String? = null,
+    val viTri: String? = null
 )
 
 data class ChildBookResponse(
@@ -477,7 +504,7 @@ data class BorrowCardResponse(
     val getBookDate: String?,
     val status: String?,
     val soNgayTre: Int?,
-    val bookIds: List<BorrowedBookBrief>? = null
+    val borrowedBooks: List<BorrowedBookBrief>? = null
 )
 
 data class BorrowedBookBrief(

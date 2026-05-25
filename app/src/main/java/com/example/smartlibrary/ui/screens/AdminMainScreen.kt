@@ -44,8 +44,8 @@ fun AdminMainScreen(
             )
         },
         bottomBar = {
-            // Cập nhật danh sách các route hiển thị BottomBar, bao gồm admin_fine_list
-            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_list", "admin_fine_list", "admin_settings")
+            // Cập nhật danh sách các route hiển thị BottomBar
+            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_list", "admin_fine_list", "admin_settings", "admin_scan")
             if (currentRoute in mainRoutes) {
                 AdminBottomBar(
                     currentRoute = currentRoute,
@@ -365,13 +365,16 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
             AdminSettingsContent(viewModel = viewModel)
         }
-        composable("admin_scan") { PlaceholderContent("Quét sách") }
-    }
-}
-
-@Composable
-private fun PlaceholderContent(name: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Màn hình $name", style = MaterialTheme.typography.headlineMedium)
+        composable("admin_scan") {
+            val scanViewModel: AdminScanViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminScanViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminScanContent(viewModel = scanViewModel)
+        }
     }
 }
