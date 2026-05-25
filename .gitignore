@@ -14,6 +14,7 @@ local.properties
 
 # Markdown and misc generated files
 *.md
+!README.md
 BACKEND_ENDPOINT_TO_ADD.java
 SecurityConfig_FIXED.java
 WebConfig_FIXED.java
