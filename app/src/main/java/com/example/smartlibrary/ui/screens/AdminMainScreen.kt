@@ -44,8 +44,8 @@ fun AdminMainScreen(
             )
         },
         bottomBar = {
-            // Cập nhật danh sách các route hiển thị BottomBar, bao gồm admin_borrow_list
-            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_list", "admin_fines", "admin_settings")
+            // Cập nhật danh sách các route hiển thị BottomBar, bao gồm admin_fine_list
+            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_list", "admin_fine_list", "admin_settings")
             if (currentRoute in mainRoutes) {
                 AdminBottomBar(
                     currentRoute = currentRoute,
@@ -54,8 +54,7 @@ fun AdminMainScreen(
             }
         }
     ) { innerPadding ->
-        // Sử dụng innerPadding để nội dung không bị đè bởi TopBar/BottomBar, 
-        // nhưng Box sẽ lấp đầy không gian này với màu nền của màn hình con.
+        // Sử dụng innerPadding để nội dung không bị đè bởi TopBar/BottomBar
         Box(modifier = Modifier.padding(innerPadding)) {
             AdminNavHost(adminNavController)
         }
@@ -316,7 +315,45 @@ fun AdminNavHost(adminNavController: NavHostController) {
             BorrowDetailScreen(viewModel = viewModel, onDeleted = { adminNavController.popBackStack() })
         }
 
-        composable("admin_fines") { PlaceholderContent("Quản lý phiếu phạt") }
+        // --- Fine Management Routes ---
+        composable("admin_fine_list") {
+            val viewModel: FineListViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return FineListViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            FineListContent(viewModel = viewModel, onNavigate = { route -> adminNavController.navigate(route) })
+        }
+        composable("admin_add_fine") {
+            val viewModel: AddFineViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AddFineViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AddFineScreen(viewModel = viewModel, onSaved = { adminNavController.popBackStack() })
+        }
+        composable(
+            route = "admin_fine_detail/{fineId}",
+            arguments = listOf(navArgument("fineId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val fineId = backStackEntry.arguments?.getString("fineId") ?: return@composable
+            val viewModel: AdminFineDetailViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminFineDetailViewModel(RetrofitClient.apiService, fineId) as T
+                    }
+                }
+            )
+            AdminFineDetailContent(viewModel = viewModel)
+        }
+
         composable("admin_settings") {
             val viewModel: AdminSettingsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {

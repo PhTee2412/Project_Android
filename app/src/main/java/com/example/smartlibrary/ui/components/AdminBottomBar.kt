@@ -51,9 +51,9 @@ fun AdminBottomBar(
             AdminBottomBarItem(
                 icon = Icons.Filled.Warning,
                 label = "Phiếu phạt",
-                route = "admin_fines",
+                route = "admin_fine_list",
                 currentRoute = currentRoute,
-                onClick = { onNavigate("admin_fines") }
+                onClick = { onNavigate("admin_fine_list") }
             )
             AdminBottomBarItem(
                 icon = Icons.Filled.QrCodeScanner,

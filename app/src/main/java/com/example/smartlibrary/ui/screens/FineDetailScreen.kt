@@ -122,8 +122,9 @@ fun FineDetailScreen(
                     FineInfoCard(currentFine)
                 }
 
-                // Sử dụng borrowCard mới sửa
-                val borrowedBooks = currentFine.borrowCard?.borrowedBooks
+                // Use local variable to allow smart casting for property with custom getter
+                val card = currentFine.cardId
+                val borrowedBooks = card?.borrowedBooks
                 if (borrowedBooks != null && borrowedBooks.isNotEmpty()) {
                     item {
                         Text(
@@ -167,9 +168,13 @@ fun FineInfoCard(fine: com.example.smartlibrary.network.FineDetailResponse) {
                 InfoRowItem("Mã phiếu phạt", "#${fine.id}")
                 InfoRowItem("Số tiền cần nộp", currencyFormatter.format(fine.soTien ?: 0.0), valueColor = Color(0xFFD32F2F))
                 InfoRowItem("Lý do phạt", fine.noiDung ?: "N/A")
-                if (fine.cardId != null) {
-                    InfoRowItem("Mã phiếu mượn", "#${fine.cardId}")
+                
+                // Captured in a local variable to allow smart casting
+                val card = fine.cardId
+                if (card != null) {
+                    InfoRowItem("Mã phiếu mượn", "#${card.id}")
                 }
+
                 Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
                 InfoRowItem("Người vi phạm", fine.tenND ?: fine.userId?.toString() ?: "N/A")
                 if (fine.trangThai == "DA_THANH_TOAN") {
