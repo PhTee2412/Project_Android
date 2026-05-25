@@ -1,5 +1,6 @@
 package com.example.smartlibrary.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smartlibrary.network.*
@@ -17,7 +18,7 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
     private val _money = MutableStateFlow("")
     val money = _money.asStateFlow()
 
-    private val _reason = MutableStateFlow("") // "Trả sách trễ hạn", "Làm mất sách", "Khác"
+    private val _reason = MutableStateFlow("")
     val reason = _reason.asStateFlow()
 
     private val _borrowList = MutableStateFlow<List<BorrowCardResponse>>(emptyList())
@@ -29,8 +30,8 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
     private val _bookText = MutableStateFlow("")
     val bookText = _bookText.asStateFlow()
 
-    private val _selectedBook = MutableStateFlow<BookResponse?>(null)
-    val selectedBook = _selectedBook.asStateFlow()
+    private val _bookFound = MutableStateFlow(false) // Thay vì BookResponse
+    val bookFound = _bookFound.asStateFlow()
 
     private val _otherContent = MutableStateFlow("")
     val otherContent = _otherContent.asStateFlow()
@@ -49,19 +50,20 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
     fun onReasonChange(text: String) {
         _reason.value = text
         _selectedBorrow.value = null
-        _selectedBook.value = null
+        _bookFound.value = false
         _otherContent.value = ""
     }
     fun onBorrowSelected(borrow: BorrowCardResponse) { _selectedBorrow.value = borrow }
-    fun onBookTextChange(text: String) { _bookText.value = text }
+    fun onBookTextChange(text: String) {
+        _bookText.value = text
+        _bookFound.value = false // reset mỗi khi thay đổi input
+    }
     fun onOtherContentChange(text: String) { _otherContent.value = text }
 
     fun findUser() {
         if (_userText.value.isBlank()) return
         viewModelScope.launch {
             try {
-                // Giả sử có API tìm user theo ID hoặc lấy tất cả rồi lọc
-                // Theo code Next.js: lọc từ userList
                 val users = apiService.getAllUsers()
                 val user = users.find { it.id.toString() == _userText.value.trim() }
                 if (user != null) {
@@ -88,15 +90,25 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     fun findBook() {
-        if (_bookText.value.isBlank()) return
+        val id = _bookText.value.trim()
+        if (id.isBlank()) {
+            _message.value = "Vui lòng nhập ID sách"
+            return
+        }
         viewModelScope.launch {
+            _isSubmitting.value = true
             try {
-                // API find book by child ID (barcode/id)
-                val book = apiService.getChildBookById(_bookText.value.trim())
-                _selectedBook.value = book
+                // Gọi API kiểm tra sự tồn tại (không cần parse dữ liệu)
+                val book = apiService.getChildBookById(id)
+                // Nếu không có exception, coi như tìm thấy
+                _bookFound.value = true
+                _message.value = "Đã tìm thấy sách (ID: $id)"
             } catch (e: Exception) {
+                Log.e("AddFine", "Lỗi kiểm tra sách", e)
+                _bookFound.value = false
                 _message.value = "Không tìm thấy sách với ID này"
-                _selectedBook.value = null
+            } finally {
+                _isSubmitting.value = false
             }
         }
     }
@@ -112,7 +124,9 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
                 cardIdValue = _selectedBorrow.value?.id ?: return run { _message.value = "Vui lòng chọn Phiếu mượn" }
             }
             "Làm mất sách" -> {
-                cardIdValue = _selectedBook.value?.maSach ?: return run { _message.value = "Vui lòng nhập và kiểm tra ID sách" }
+                if (_bookText.value.isBlank() || !_bookFound.value)
+                    return run { _message.value = "Vui lòng nhập và kiểm tra ID sách" }
+                cardIdValue = _bookText.value // Lưu ID sách con dạng String
             }
             "Khác" -> {
                 if (_otherContent.value.isBlank()) return run { _message.value = "Vui lòng nhập nội dung phạt" }
@@ -134,9 +148,12 @@ class AddFineViewModel(private val apiService: ApiService) : ViewModel() {
                     _isSuccess.value = true
                     _message.value = "Thêm phiếu phạt thành công!"
                 } else {
-                    _message.value = "Lỗi khi tạo phiếu phạt"
+                    val errorBody = response.errorBody()?.string() ?: "Không rõ lỗi"
+                    Log.e("AddFine", "Submit thất bại: $errorBody")
+                    _message.value = "Lỗi khi tạo phiếu phạt ($errorBody)"
                 }
             } catch (e: Exception) {
+                Log.e("AddFine", "Submit lỗi", e)
                 _message.value = "Lỗi: ${e.localizedMessage}"
             } finally {
                 _isSubmitting.value = false

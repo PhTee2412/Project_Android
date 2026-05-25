@@ -37,7 +37,7 @@ fun AddFineScreen(
     val borrowList by viewModel.borrowList.collectAsState()
     val selectedBorrow by viewModel.selectedBorrow.collectAsState()
     val bookText by viewModel.bookText.collectAsState()
-    val selectedBook by viewModel.selectedBook.collectAsState()
+    val bookFound by viewModel.bookFound.collectAsState()
     val otherContent by viewModel.otherContent.collectAsState()
     val isSubmitting by viewModel.isSubmitting.collectAsState()
     val message by viewModel.message.collectAsState()
@@ -218,14 +218,19 @@ fun AddFineScreen(
                                     onClick = { viewModel.findBook() },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
                                     shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(56.dp)
+                                    modifier = Modifier.height(56.dp),
+                                    enabled = !isSubmitting
                                 ) {
-                                    Text("Kiểm tra")
+                                    if (isSubmitting) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                                    } else {
+                                        Text("Kiểm tra")
+                                    }
                                 }
                             }
-                            if (selectedBook != null) {
+                            if (bookFound) {
                                 Text(
-                                    text = "✓ ${selectedBook?.tenSach}",
+                                    text = "✓ Đã xác nhận sách",
                                     color = Color(0xFF2E7D32),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp
