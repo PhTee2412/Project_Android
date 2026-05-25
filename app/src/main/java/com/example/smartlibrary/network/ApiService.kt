@@ -5,6 +5,8 @@ import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import com.google.gson.Gson
 
 interface ApiService {
     // ==================== BOOK APIs ====================
@@ -55,6 +57,12 @@ interface ApiService {
     @DELETE("api/bookchild/{childId}")
     suspend fun deleteChildBook(@Path("childId") childId: String): Response<Unit>
 
+    @GET("api/bookchild/{id}")
+    suspend fun getChildBookById(@Path("id") id: String): BookResponse
+
+    @GET("api/bookchild/barcode/{barcode}")
+    suspend fun getChildBookByBarcode(@Path("barcode") barcode: String): BookChildFullResponse
+
     // ==================== CATEGORY APIs ====================
     @GET("api/category")
     suspend fun getCategories(): List<CategoryResponse>
@@ -96,6 +104,9 @@ interface ApiService {
     // ==================== SETTINGS APIs ====================
     @GET("api/settings")
     suspend fun getSettings(): Setting
+
+    @POST("api/settings")
+    suspend fun updateSettings(@Body settings: Setting): Response<Setting>
 
     // ==================== CART APIs ====================
     @GET("api/cart/{userId}")
@@ -151,12 +162,47 @@ interface ApiService {
     @DELETE("api/borrow-cards/{id}")
     suspend fun deleteBorrowCard(@Path("id") id: String): Response<Unit>
 
+    @GET("api/borrow-cards")
+    suspend fun getAllBorrowCards(): List<BorrowCardResponse>
+
+    @POST("api/borrow-cards")
+    suspend fun createBorrowCard(@Body request: CreateBorrowCardRequest): Response<BorrowCardResponse>
+
+    @PUT("api/borrow-cards/expired/{id}")
+    suspend fun markExpired(@Path("id") id: String): Response<Unit>
+
+    @POST("api/borrow-cards/askToReturn")
+    suspend fun askToReturn(@Body list: List<BorrowCardResponse>): Response<Unit>
+
+    @PUT("api/borrow-cards/borrow/{id}")
+    suspend fun borrowBooksConfirm(@Path("id") id: Int, @Body barcodes: List<String>): Response<Unit>
+
+    @PUT("api/borrow-cards/return-one/{cardId}")
+    suspend fun returnOneBook(@Path("cardId") cardId: Int, @Body body: Map<String, String>): Response<Unit>
+
+    // ==================== UPLOAD APIs ====================
+    @Multipart
+    @POST("api/upload/barcodeImage")
+    suspend fun uploadBarcodeImage(
+        @Part file: MultipartBody.Part,
+        @Part("type") type: RequestBody
+    ): Response<BarcodeUploadResponse>
+
     // ==================== FINE APIs ====================
+    @GET("api/fines")
+    suspend fun getAllFines(): List<FineResponse>
+
     @GET("api/fines/{userId}")
     suspend fun getFinesByUser(@Path("userId") userId: String): List<FineResponse>
 
     @GET("api/fine/{id}")
     suspend fun getFineById(@Path("id") id: String): FineDetailResponse
+
+    @POST("api/addFine")
+    suspend fun addFine(@Body payload: AddFineRequest): Response<FineResponse>
+
+    @PUT("api/fine/pay/{id}")
+    suspend fun payFine(@Path("id") id: String): Response<Unit>
 
     @POST("api/fine/pay-momo/{id}")
     suspend fun payFineByMomo(@Path("id") id: String): MomoPaymentResponse
@@ -179,6 +225,12 @@ interface ApiService {
 
     @POST("api/auth/facebook")
     suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
+
+    @POST("api/forgot-password")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<Unit>
+
+    @POST("api/reset-password")
+    suspend fun resetPassword(@Body body: ResetPasswordRequest): Response<Unit>
 
 
     // Endpoint login admin – dùng chung endpoint /api/login nhưng request khác
@@ -227,9 +279,43 @@ interface ApiService {
     @POST("api/admin/verify-otp-create")
     suspend fun verifyOtpCreate(@Body body: VerifyOtpRequest): Response<AdminUserSingleResponse>
 
+    @GET("api/user")
+    suspend fun getAllUsers(): List<User>
+
 }
 
 // ==================== DATA CLASSES ====================
+
+data class ForgotPasswordRequest(val emailOrPhone: String)
+
+data class ResetPasswordRequest(
+    val emailOrPhone: String,
+    val otp: String,
+    val newPassword: String
+)
+
+data class BarcodeUploadResponse(val result: String?)
+
+data class BookChildFullResponse(
+    val id: String,
+    val barcode: String?,
+    val bookId: Long?,
+    val status: String?
+)
+
+data class AddFineRequest(
+    val userId: Int,
+    val soTien: Double,
+    val noiDung: String,
+    val cardId: Any? = null
+)
+
+data class CreateBorrowCardRequest(
+    val userId: Long,
+    val bookIds: List<Long>,
+    val borrowDate: String? = null,
+    val dueDate: String? = null
+)
 
 data class UserListResponse(
     val message: String?,
@@ -304,7 +390,8 @@ data class BookResponse(
     val moTa: String? = null,
     val categoryChildId: String? = null,
     val categoryChildName: String? = null,
-    val categoryParentName: String? = null
+    val categoryParentName: String? = null,
+    val viTri: String? = null
 )
 
 data class ChildBookResponse(
@@ -408,7 +495,8 @@ data class AvatarData(val avatar_url: String?)
 
 data class VerifyOtpRequest(
     val id: String? = null,
-    val email: String,
+    val email: String? = null,
+    val phone: String? = null,
     val otp: String
 )
 
@@ -431,7 +519,7 @@ data class BorrowCardResponse(
     val getBookDate: String?,
     val status: String?,
     val soNgayTre: Int?,
-    val bookIds: List<BorrowedBookBrief>? = null
+    val borrowedBooks: List<BorrowedBookBrief>? = null
 )
 
 data class BorrowedBookBrief(
@@ -442,6 +530,7 @@ data class BorrowedBookBrief(
     val image: String?,
     val category: String?,
     val publisher: String?,
+    val viTri: String? = null, // Added for location
     val borrowCount: Int? = null
 )
 
@@ -475,19 +564,58 @@ data class UserBrief(
 
 data class FineDetailResponse(
     val id: Int,
-    val userId: Int? = null,
+    @SerializedName("userId")
+    val userIdElement: JsonElement? = null,
     val soTien: Double? = null,
     val noiDung: String? = null,
     val trangThai: String? = null,
     val ngayThanhToan: String? = null,
-    val cardId: String? = null,
-    val borrowCard: BorrowCardInFine? = null,
+    @SerializedName("cardId")
+    val cardIdElement: JsonElement? = null,
     val tenND: String? = null
-)
+) {
+    val userId: UserBrief?
+        get() = try {
+            if (userIdElement?.isJsonObject == true) {
+                Gson().fromJson(userIdElement, UserBrief::class.java)
+            } else if (userIdElement?.isJsonPrimitive == true) {
+                UserBrief(id = userIdElement.asInt)
+            } else null
+        } catch (e: Exception) { null }
+
+    // Trả về object mượn/trả nếu cardId là object có "borrowedBooks"
+    val cardId: BorrowCardInFine?
+        get() = try {
+            if (cardIdElement?.isJsonObject == true) {
+                val obj = cardIdElement.asJsonObject
+                if (obj.has("borrowedBooks")) {
+                    Gson().fromJson(cardIdElement, BorrowCardInFine::class.java)
+                } else null
+            } else null
+        } catch (e: Exception) { null }
+
+    // Trả về sách nếu cardId là object sách (không có "borrowedBooks")
+    val bookFromCard: BookResponse?
+        get() = try {
+            if (cardIdElement?.isJsonObject == true) {
+                val obj = cardIdElement.asJsonObject
+                if (!obj.has("borrowedBooks")) {
+                    Gson().fromJson(cardIdElement, BookResponse::class.java)
+                } else null
+            } else null
+        } catch (e: Exception) { null }
+
+    // Trả về chuỗi nếu cardId là string (dành cho lý do "Khác")
+    val cardIdString: String?
+        get() = if (cardIdElement?.isJsonPrimitive == true) cardIdElement.asString else null
+}
 
 data class BorrowCardInFine(
     val id: Int,
-    val borrowedBooks: List<BorrowedBookBrief>?
+    val borrowedBooks: List<BorrowedBookBrief>?,
+    val soNgayTre: Int? = null,
+    val getBookDate: String? = null,
+    val dueDate: String? = null
 )
 
 data class MomoPaymentResponse(val payUrl: String, val status: String?)

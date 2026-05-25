@@ -44,7 +44,8 @@ fun AdminMainScreen(
             )
         },
         bottomBar = {
-            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_fines", "admin_fines", "admin_settings")
+            // Cập nhật danh sách các route hiển thị BottomBar
+            val mainRoutes = listOf("admin_dashboard", "admin_books", "admin_users", "admin_borrow_list", "admin_fine_list", "admin_settings", "admin_scan")
             if (currentRoute in mainRoutes) {
                 AdminBottomBar(
                     currentRoute = currentRoute,
@@ -53,6 +54,7 @@ fun AdminMainScreen(
             }
         }
     ) { innerPadding ->
+        // Sử dụng innerPadding để nội dung không bị đè bởi TopBar/BottomBar
         Box(modifier = Modifier.padding(innerPadding)) {
             AdminNavHost(adminNavController)
         }
@@ -274,16 +276,105 @@ fun AdminNavHost(adminNavController: NavHostController) {
             )
         }
 
-        composable("admin_borrow_fines") { PlaceholderContent("Quản lý mượn/trả") }
-        composable("admin_fines") { PlaceholderContent("Quản lý phiếu phạt") }
-        composable("admin_settings") { PlaceholderContent("Quản lý cài đặt") }
-        composable("admin_scan") { PlaceholderContent("Quét sách") }
-    }
-}
+        // --- Borrow Management Routes ---
+        composable("admin_borrow_list") {
+            val viewModel: BorrowListViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return BorrowListViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            BorrowListScreen(viewModel = viewModel, onNavigate = { route -> adminNavController.navigate(route) })
+        }
+        composable("admin_add_borrow") {
+            val viewModel: AddBorrowViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AddBorrowViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AddBorrowScreen(viewModel = viewModel, onSaved = { adminNavController.popBackStack() })
+        }
+        composable(
+            route = "admin_borrow_detail/{cardId}",
+            arguments = listOf(navArgument("cardId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val cardId = backStackEntry.arguments?.getLong("cardId") ?: return@composable
+            val viewModel: BorrowDetailViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return BorrowDetailViewModel(cardId, RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            BorrowDetailScreen(viewModel = viewModel, onDeleted = { adminNavController.popBackStack() })
+        }
 
-@Composable
-private fun PlaceholderContent(name: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Màn hình $name", style = MaterialTheme.typography.headlineMedium)
+        // --- Fine Management Routes ---
+        composable("admin_fine_list") {
+            val viewModel: FineListViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return FineListViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            FineListContent(viewModel = viewModel, onNavigate = { route -> adminNavController.navigate(route) })
+        }
+        composable("admin_add_fine") {
+            val viewModel: AddFineViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AddFineViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AddFineScreen(viewModel = viewModel, onSaved = { adminNavController.popBackStack() })
+        }
+        composable(
+            route = "admin_fine_detail/{fineId}",
+            arguments = listOf(navArgument("fineId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val fineId = backStackEntry.arguments?.getString("fineId") ?: return@composable
+            val viewModel: AdminFineDetailViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminFineDetailViewModel(RetrofitClient.apiService, fineId) as T
+                    }
+                }
+            )
+            AdminFineDetailContent(viewModel = viewModel)
+        }
+
+        composable("admin_settings") {
+            val viewModel: AdminSettingsViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminSettingsViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminSettingsContent(viewModel = viewModel)
+        }
+        composable("admin_scan") {
+            val scanViewModel: AdminScanViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return AdminScanViewModel(RetrofitClient.apiService) as T
+                    }
+                }
+            )
+            AdminScanContent(viewModel = scanViewModel)
+        }
     }
 }
