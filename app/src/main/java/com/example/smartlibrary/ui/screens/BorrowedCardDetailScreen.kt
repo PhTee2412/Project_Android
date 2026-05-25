@@ -34,6 +34,7 @@ fun BorrowedCardDetailScreen(
     val cardDetail by viewModel.cardDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isDetailLoaded by viewModel.isDetailLoaded.collectAsState()
+    val selectedTab by viewModel.selectedTab.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(cardId) {
@@ -50,8 +51,17 @@ fun BorrowedCardDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                    // Không cho phép xóa nếu phiếu đang ở trạng thái "Đang mượn" hoặc ở tab "Đang mượn"
+                    val status = cardDetail?.status ?: ""
+                    val isBorrowed = status.equals("DANG_MUON", ignoreCase = true) ||
+                                     status.equals("BORROWED", ignoreCase = true) ||
+                                     status.equals("Đang mượn", ignoreCase = true) ||
+                                     selectedTab == "Đang mượn"
+
+                    if (cardDetail != null && !isBorrowed) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -90,7 +100,6 @@ fun BorrowedCardDetailScreen(
                                 .padding(16.dp)
                         ) {
                             // Cột 1: ID Phiếu, Ngày mượn, Hạn lấy sách
-                            // Sử dụng weight nhỏ (0.35) vì dữ liệu cột này ngắn (số và ngày)
                             Column(
                                 modifier = Modifier.weight(0.5f),
                                 horizontalAlignment = Alignment.Start
@@ -105,7 +114,6 @@ fun BorrowedCardDetailScreen(
                             }
 
                             // Cột 2: ID Người dùng, Tên người dùng, Số lượng mượn
-                            // Chiếm weight lớn hơn (0.65) để đẩy lề trái của cột này xích qua trái
                             Column(
                                 modifier = Modifier.weight(0.5f),
                                 horizontalAlignment = Alignment.Start
