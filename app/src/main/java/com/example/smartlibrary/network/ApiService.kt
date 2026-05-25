@@ -226,6 +226,12 @@ interface ApiService {
     @POST("api/auth/facebook")
     suspend fun loginWithFacebook(@Body body: SocialLoginRequest): LoginResponse
 
+    @POST("api/forgot-password")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<Unit>
+
+    @POST("api/reset-password")
+    suspend fun resetPassword(@Body body: ResetPasswordRequest): Response<Unit>
+
 
     // Endpoint login admin – dùng chung endpoint /api/login nhưng request khác
     @POST("api/login")
@@ -279,6 +285,14 @@ interface ApiService {
 }
 
 // ==================== DATA CLASSES ====================
+
+data class ForgotPasswordRequest(val emailOrPhone: String)
+
+data class ResetPasswordRequest(
+    val emailOrPhone: String,
+    val otp: String,
+    val newPassword: String
+)
 
 data class BarcodeUploadResponse(val result: String?)
 
@@ -481,7 +495,8 @@ data class AvatarData(val avatar_url: String?)
 
 data class VerifyOtpRequest(
     val id: String? = null,
-    val email: String,
+    val email: String? = null,
+    val phone: String? = null,
     val otp: String
 )
 

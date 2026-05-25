@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+
 class AuthViewModel(
     private val apiService: ApiService,
     private val sessionManager: SessionManager,
@@ -28,6 +31,12 @@ class AuthViewModel(
     var gender by mutableStateOf("Nam")
     var otp by mutableStateOf("")
 
+    // Forgot Password States
+    var forgotPasswordStep by mutableStateOf("none") // "none", "request", "reset"
+    var newPassword by mutableStateOf("")
+    var resendTimeout by mutableStateOf(0)
+    private var timerJob: Job? = null
+
     var showPassword by mutableStateOf(false)
         private set
 
@@ -37,11 +46,13 @@ class AuthViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    // Sử dụng StateFlow để đồng bộ trạng thái OTP cho UI
     private val _isOtpSent = MutableStateFlow(false)
     val isOtpSent: StateFlow<Boolean> = _isOtpSent.asStateFlow()
 
     fun onTabSelected(tab: String) {
         activeTab = tab
+        forgotPasswordStep = "none"
         resetForm()
     }
 
@@ -52,8 +63,10 @@ class AuthViewModel(
         birthdate = ""
         gender = "Nam"
         otp = ""
+        newPassword = ""
         _isOtpSent.value = false
         _message.value = null
+        stopResendTimer()
     }
 
     fun togglePasswordVisibility() {
@@ -62,6 +75,11 @@ class AuthViewModel(
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    fun cancelOtp() {
+        _isOtpSent.value = false
+        otp = ""
     }
 
     private fun determineInputType(input: String): Pair<String, String> {
@@ -96,7 +114,6 @@ class AuthViewModel(
                         name = user?.name,
                         email = user?.email
                     )
-                    Log.d("LOGIN_DEBUG", "Đã lưu token cho user: ${user?.id}, role: ${user?.role}")
                     _message.value = response.message ?: "Đăng nhập thành công"
                     onLoginSuccess()
                 } else {
@@ -115,7 +132,7 @@ class AuthViewModel(
 
     fun register() {
         if (username.isBlank() || identifier.isBlank() || password.isBlank()) {
-            _message.value = "Vui lòng điền các trường bắt buộc"
+            _message.value = "Vui lòng điền đầy đủ thông tin đăng ký"
             return
         }
 
@@ -131,23 +148,17 @@ class AuthViewModel(
                     birthdate = if (birthdate.isNotBlank()) birthdate else null,
                     gender = gender
                 )
-                val response = apiService.register(request)
-                if (response.message?.contains("thành công") == true || response.status == "success") {
-                    if (type == "email") {
-                        _isOtpSent.value = true
-                        _message.value = "Mã OTP đã gửi đến email của bạn"
-                    } else {
-                        activeTab = "login"
-                        _message.value = "Đăng ký thành công. Vui lòng đăng nhập."
-                    }
-                } else {
-                    _message.value = response.message ?: "Đăng ký thất bại"
-                }
+
+                apiService.register(request)
+
+                _isOtpSent.value = true
+                _message.value = "Mã OTP đã được gửi thành công!"
+                Log.d("AuthViewModel", "OTP screen ON")
             } catch (e: retrofit2.HttpException) {
                 val errorBody = e.response()?.errorBody()?.string()
-                _message.value = errorBody ?: "Lỗi đăng ký"
+                _message.value = errorBody ?: "Tài khoản hoặc email này đã tồn tại"
             } catch (e: Exception) {
-                _message.value = "Lỗi: ${e.localizedMessage}"
+                _message.value = "Lỗi hệ thống: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -156,21 +167,30 @@ class AuthViewModel(
 
     fun verifyOtp() {
         if (otp.length != 6) {
-            _message.value = "Mã OTP phải có 6 chữ số"
+            _message.value = "Vui lòng nhập mã OTP gồm 6 chữ số"
             return
         }
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val (_, value) = determineInputType(identifier)
-                val response = apiService.verifyOtp(VerifyOtpRequest(email = value, otp = otp))
-                if (response.status == "success") {
+                val (type, value) = determineInputType(identifier)
+
+                val response = apiService.verifyOtp(
+                    VerifyOtpRequest(
+                        email = if (type == "email") value else null,
+                        phone = if (type == "phone") value else null,
+                        otp = otp
+                    )
+                )
+
+                if (response.status?.equals("success", ignoreCase = true) == true) {
                     _isOtpSent.value = false
                     activeTab = "login"
-                    _message.value = "Xác thực thành công. Vui lòng đăng nhập."
+                    otp = ""
+                    _message.value = "Xác thực thành công! Mời bạn đăng nhập."
                 } else {
-                    _message.value = response.message ?: "Xác thực thất bại"
+                    _message.value = response.message ?: "Mã OTP không đúng hoặc đã hết hạn"
                 }
             } catch (e: Exception) {
                 _message.value = "Lỗi xác thực: ${e.localizedMessage}"
@@ -180,7 +200,75 @@ class AuthViewModel(
         }
     }
 
-    // Mock Google/Facebook login – sau này thay bằng code thật
+    fun requestForgotPassword() {
+        if (identifier.isBlank()) {
+            _message.value = "Vui lòng nhập Email hoặc Số điện thoại"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = apiService.forgotPassword(ForgotPasswordRequest(identifier))
+                if (response.isSuccessful) {
+                    _message.value = "Mã OTP khôi phục mật khẩu đã được gửi"
+                    forgotPasswordStep = "reset"
+                    startResendTimer()
+                } else {
+                    _message.value = "Gửi OTP không thành công"
+                }
+            } catch (e: Exception) {
+                _message.value = "Lỗi: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun resetForgotPassword() {
+        if (otp.isBlank() || newPassword.isBlank()) {
+            _message.value = "Vui lòng nhập mã OTP và mật khẩu mới"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = apiService.resetPassword(
+                    ResetPasswordRequest(identifier, otp, newPassword)
+                )
+                if (response.isSuccessful) {
+                    _message.value = "Đổi mật khẩu thành công!"
+                    forgotPasswordStep = "none"
+                    activeTab = "login"
+                    resetForm()
+                } else {
+                    _message.value = "Cập nhật mật khẩu thất bại"
+                }
+            } catch (e: Exception) {
+                _message.value = "Lỗi: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private fun startResendTimer() {
+        timerJob?.cancel()
+        resendTimeout = 60
+        timerJob = viewModelScope.launch {
+            while (resendTimeout > 0) {
+                delay(1000)
+                resendTimeout--
+            }
+        }
+    }
+
+    private fun stopResendTimer() {
+        timerJob?.cancel()
+        resendTimeout = 0
+    }
+
     fun loginWithGoogle(token: String) {
         viewModelScope.launch {
             _isLoading.value = true

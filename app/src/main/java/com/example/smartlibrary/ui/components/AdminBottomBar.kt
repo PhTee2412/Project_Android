@@ -86,12 +86,12 @@ private fun AdminBottomBarItem(
             icon,
             contentDescription = label,
             modifier = Modifier.size(24.dp),
-            tint = if (isActive) Color(0xFF062D76) else Color.Gray
+            tint = if (isActive) Color(0xFF6CB1DA) else Color.Gray
         )
         Text(
             text = label,
             fontSize = 10.sp,
-            color = if (isActive) Color(0xFF062D76) else Color.Gray
+            color = if (isActive) Color(0xFF6CB1DA) else Color.Gray
         )
     }
 }
