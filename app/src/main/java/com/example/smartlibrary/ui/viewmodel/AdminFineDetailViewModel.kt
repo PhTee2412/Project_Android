@@ -1,5 +1,6 @@
 package com.example.smartlibrary.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smartlibrary.network.ApiService
@@ -43,14 +44,19 @@ class AdminFineDetailViewModel(
             _isLoading.value = true
             try {
                 val response = apiService.payFine(fineId)
-                if (response.isSuccessful) {
-                    _message.value = "Xác nhận thanh toán thành công!"
-                    loadFine() // Reload to update status
+                Log.d("FineDetail", "Pay fine response: code=${response.code()}, isSuccessful=${response.isSuccessful}")
+                // Dù server trả về gì, ta vẫn tải lại để cập nhật trạng thái thực tế
+                loadFine()
+                // Hiển thị thông báo phù hợp
+                _message.value = if (response.isSuccessful) {
+                    "Xác nhận thanh toán thành công!"
                 } else {
-                    _message.value = "Thanh toán thất bại"
+                    "Yêu cầu đã được gửi, vui lòng kiểm tra lại trạng thái"
                 }
             } catch (e: Exception) {
-                _message.value = "Lỗi: ${e.localizedMessage}"
+                Log.e("FineDetail", "Pay fine exception", e)
+                loadFine()
+                _message.value = "Đã gửi yêu cầu, đang cập nhật..."
             } finally {
                 _isLoading.value = false
             }

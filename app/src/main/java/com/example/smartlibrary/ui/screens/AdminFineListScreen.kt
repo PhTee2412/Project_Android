@@ -43,6 +43,11 @@ fun FineListContent(
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Reload dữ liệu mỗi khi vào màn hình
+    LaunchedEffect(Unit) {
+        viewModel.loadFines()
+    }
+
     LaunchedEffect(message) {
         message?.let {
             snackbarHostState.showSnackbar(it)

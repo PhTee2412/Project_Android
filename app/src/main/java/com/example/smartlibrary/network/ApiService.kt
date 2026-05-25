@@ -566,29 +566,33 @@ data class FineDetailResponse(
             } else if (userIdElement?.isJsonPrimitive == true) {
                 UserBrief(id = userIdElement.asInt)
             } else null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
 
+    // Trả về object mượn/trả nếu cardId là object có "borrowedBooks"
     val cardId: BorrowCardInFine?
         get() = try {
             if (cardIdElement?.isJsonObject == true) {
-                val card = Gson().fromJson(cardIdElement, BorrowCardInFine::class.java)
-                // If it's a book instead of a card, it might have null borrowedBooks
-                if (card.borrowedBooks != null || noiDung != "Làm mất sách") card else null
+                val obj = cardIdElement.asJsonObject
+                if (obj.has("borrowedBooks")) {
+                    Gson().fromJson(cardIdElement, BorrowCardInFine::class.java)
+                } else null
             } else null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
 
+    // Trả về sách nếu cardId là object sách (không có "borrowedBooks")
     val bookFromCard: BookResponse?
         get() = try {
             if (cardIdElement?.isJsonObject == true) {
-                Gson().fromJson(cardIdElement, BookResponse::class.java)
+                val obj = cardIdElement.asJsonObject
+                if (!obj.has("borrowedBooks")) {
+                    Gson().fromJson(cardIdElement, BookResponse::class.java)
+                } else null
             } else null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
+
+    // Trả về chuỗi nếu cardId là string (dành cho lý do "Khác")
+    val cardIdString: String?
+        get() = if (cardIdElement?.isJsonPrimitive == true) cardIdElement.asString else null
 }
 
 data class BorrowCardInFine(

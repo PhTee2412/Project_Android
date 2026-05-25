@@ -128,8 +128,9 @@ fun AdminFineDetailContent(
                                 )
                                 Divider(color = Color(0xFFF1F4F9))
 
-                                when (currentFine.noiDung) {
-                                    "Trả sách trễ hạn" -> {
+                                val content = currentFine.noiDung ?: ""
+                                when {
+                                    content.contains("trễ hạn", ignoreCase = true) -> {
                                         val borrow = currentFine.cardId
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Column {
@@ -146,9 +147,15 @@ fun AdminFineDetailContent(
                                             AdminBookInFineCard(book)
                                         }
                                     }
-                                    "Làm mất sách" -> {
-                                        currentFine.cardId?.borrowedBooks?.forEach { book ->
-                                            AdminBookInFineCard(book)
+                                    content.contains("mất sách", ignoreCase = true) -> {
+                                        val books = currentFine.cardId?.borrowedBooks
+                                        if (!books.isNullOrEmpty()) {
+                                            books.forEach { book -> AdminBookInFineCard(book) }
+                                        } else {
+                                            // Fallback nếu backend trả về object sách thay vì card
+                                            currentFine.bookFromCard?.let { b ->
+                                                AdminBookInFineCard(BorrowedBookBrief(b.maSach.toInt(), null, b.tenSach, b.tenTacGia, b.hinhAnh?.firstOrNull(), b.categoryChildName, b.nxb))
+                                            } ?: Text("Thông tin sách bị mất", color = Color.Gray, fontSize = 13.sp)
                                         }
                                     }
                                     else -> {
@@ -159,7 +166,11 @@ fun AdminFineDetailContent(
                                                 .background(Color(0xFFF1F4F9))
                                                 .padding(12.dp)
                                         ) {
-                                            Text(text = "Ghi chú: ${currentFine.cardId?.id ?: "Không có thông tin thêm"}")
+                                            Text(
+                                                text = "Ghi chú: ${currentFine.cardIdString ?: currentFine.noiDung ?: "Không có thông tin thêm"}",
+                                                fontSize = 14.sp,
+                                                color = Color.DarkGray
+                                            )
                                         }
                                     }
                                 }
@@ -181,7 +192,7 @@ fun AdminFineDetailContent(
                                 .padding(16.dp)
                                 .fillMaxWidth()
                                 .height(50.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CE5F4)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6CB1DA)),
                             shape = RoundedCornerShape(25.dp),
                             enabled = !isLoading
                         ) {
@@ -249,7 +260,7 @@ private fun AdminBookInFineCard(book: BorrowedBookBrief) {
             Column {
                 Text(text = book.name ?: "N/A", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                 Text(text = book.author ?: "N/A", fontSize = 12.sp, color = Color.Gray)
-                Text(text = "ID: ${book.bookId}", fontSize = 11.sp, color = Color(0xFF062D76))
+                Text(text = "ID: ${book.bookId}", fontSize = 11.sp, color = Color.Gray)
             }
         }
     }
