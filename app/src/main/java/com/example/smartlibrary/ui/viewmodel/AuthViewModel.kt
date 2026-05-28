@@ -289,6 +289,7 @@ class AuthViewModel(
                 }
             } catch (e: Exception) {
                 _message.value = "Lỗi kết nối Google: ${e.localizedMessage}"
+                Log.e("GoogleLogin", "BE error: ${e.message}")
             } finally {
                 _isLoading.value = false
             }

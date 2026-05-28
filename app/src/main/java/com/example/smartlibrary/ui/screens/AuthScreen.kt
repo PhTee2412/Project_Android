@@ -76,10 +76,11 @@ fun AuthScreen(
     }
 
     // ===== Google Sign-In setup =====
-    val androidClientId = "762941990924-gv4gegj70j1b46i3j4v6tlcsj4gmpn85.apps.googleusercontent.com"
+
+    val webClientId  = "762941990924-gmu17ns8u74isi5aeqboobkjpdgh2p87.apps.googleusercontent.com"
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(androidClientId)
+            .requestIdToken(webClientId)
             .requestEmail()
             .build()
     }
@@ -91,11 +92,19 @@ fun AuthScreen(
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            val idToken = account.idToken ?: ""
-            if (idToken.isNotBlank()) {
+            val idToken = account.idToken
+
+            // Thêm log này
+            Log.d("GoogleLogin", "idToken = $idToken")
+            Log.d("GoogleLogin", "email = ${account.email}")
+
+            if (!idToken.isNullOrBlank()) {
                 viewModel.loginWithGoogle(idToken)
+            } else {
+                viewModel.showMessage("Lỗi: không lấy được idToken từ Google")
             }
         } catch (e: ApiException) {
+            Log.e("GoogleLogin", "ApiException statusCode = ${e.statusCode}")
             viewModel.showMessage("Lỗi đăng nhập Google: ${e.statusCode}")
         }
     }
@@ -225,7 +234,11 @@ fun AuthScreen(
                                     if (viewModel.activeTab == "login") {
                                         LoginForm(
                                             viewModel = viewModel,
-                                            onGoogleClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },
+                                            onGoogleClick = {
+                                                googleSignInClient.signOut().addOnCompleteListener {
+                                                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                                                }
+                                            },
                                             onFacebookClick = {
                                                 facebookLoginLauncher.logInWithReadPermissions(
                                                     activity,
