@@ -1,4 +1,6 @@
+
 This project is a comprehensive Android application designed for modern library management. It offers a seamless experience for both users and administrators. Built with **Kotlin** and **Jetpack Compose**, it follows modern Android development practices.
+
 
 ## Table of Contents
 - [Technologies](#technologies)

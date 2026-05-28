@@ -14,11 +14,11 @@ local.properties
 
 # Markdown and misc generated files
 *.md
-BACKEND_ENDPOINT_TO_ADD.java
-SecurityConfig_FIXED.java
-WebConfig_FIXED.java
-application_properties_multipart_config.properties
+!README.md
+
 
 # OS files
 .DS_Store
 Thumbs.db
+
+**/strings.xml
